@@ -44,4 +44,5 @@ htmlcov/
 # Projeto
 data/
 models/
+results/
 *.log

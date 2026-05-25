@@ -13,6 +13,7 @@ from app.application.strategies.prompt import (
 from app.application.strategies.retrieval import (
     NoRetrievalStrategy,
     PgVectorRetrievalStrategy,
+    RerankPgVectorRetrievalStrategy,
     RetrievalStrategy,
 )
 
@@ -25,5 +26,6 @@ __all__ = [
     "RestrictiveRagPromptStrategy",
     "RetrievalStrategy",
     "PgVectorRetrievalStrategy",
+    "RerankPgVectorRetrievalStrategy",
     "NoRetrievalStrategy",
 ]

@@ -23,6 +23,16 @@ class AskRequest(BaseModel):
         le=100_000,
         description="Tamanho alvo de chunk (uso futuro na indexação).",
     )
+    rerank_top_k: int | None = Field(
+        default=None,
+        ge=1,
+        le=200,
+        description="Candidatos pgvector antes do rerank (cenário rag_rerank).",
+    )
+    score_threshold: float | None = Field(
+        default=None,
+        description="Score mínimo do cross-encoder (cenário rag_rerank).",
+    )
 
     def to_execute_input(self) -> ExecuteRAGInput:
         return ExecuteRAGInput(
@@ -30,6 +40,8 @@ class AskRequest(BaseModel):
             scenario=self.scenario,
             top_k=self.top_k,
             chunk_size=self.chunk_size,
+            rerank_top_k=self.rerank_top_k,
+            score_threshold=self.score_threshold,
         )
 
 
