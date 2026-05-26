@@ -1,0 +1,84 @@
+sequenceDiagram
+
+    autonumber
+
+    participant C as Cliente
+
+    participant API as FastAPI /ask
+
+    participant UC as execute_rag
+
+    participant RP as run_rag_pipeline
+
+    participant RS as RetrievalStrategy
+
+    participant PS as PromptStrategy
+
+    participant F as get_generation_strategy
+
+    participant GS as GenerationStrategy
+
+    participant DB as PostgreSQL pgvector
+
+    participant LLM as Ollama ou OpenAI
+
+
+
+    C->>API: POST question, scenario, top_k
+
+    API->>UC: ExecuteRAGInput
+
+    UC->>UC: _select_strategies()
+
+    UC->>F: LLM_PROVIDER
+
+    F-->>UC: Ollama ou OpenAI strategy
+
+    UC->>RP: question, top_k, strategies
+
+
+
+    RP->>RS: retrieve(session, question, top_k)
+
+    alt rag_rerank
+
+        RS->>DB: top_k expandido
+
+        RS->>RS: CrossEncoder rerank
+
+        RS-->>RP: top_k final
+
+    else rag_basic / rag_optimized
+
+        RS->>DB: busca cosseno
+
+        RS-->>RP: top_k chunks
+
+    else llm
+
+        RS-->>RP: lista vazia
+
+    end
+
+
+
+    RP->>PS: build_context + build_prompt
+
+    RP->>GS: generate(prompt)
+
+    GS->>LLM: invoke / chat completion
+
+    LLM-->>GS: resposta
+
+    GS-->>RP: LLMGenerationResult
+
+    RP-->>UC: RAGPipelineResult
+
+
+
+    UC->>DB: experiment_runs (log)
+
+    UC-->>API: resultado
+
+    API-->>C: answer, chunks, scores, tokens
+

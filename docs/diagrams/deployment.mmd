@@ -1,0 +1,58 @@
+flowchart LR
+
+    subgraph host [Máquina do desenvolvedor / servidor]
+
+        API[uvicorn app.main:app :8000]
+
+        PY[Python venv]
+
+        ST[sentence-transformers local]
+
+        CE[CrossEncoder local]
+
+        OLL[Ollama phi3 localhost:11434]
+
+    end
+
+
+
+    subgraph cloud [Serviços externos opcionais]
+
+        OAI[OpenAI API se LLM_PROVIDER=openai]
+
+        WIKI[MediaWiki API pt.wikipedia.org]
+
+    end
+
+
+
+    subgraph data [Dados]
+
+        PG[(PostgreSQL 16+ pgvector)]
+
+        BENCH[benchmark_questions_v2_final.json]
+
+        RES[results/ JSON CSV]
+
+    end
+
+
+
+    PY --> API
+
+    API --> PG
+
+    API --> ST
+
+    API --> CE
+
+    API --> OLL
+
+    API --> OAI
+
+    PY --> WIKI
+
+    PY --> BENCH
+
+    PY --> RES
+

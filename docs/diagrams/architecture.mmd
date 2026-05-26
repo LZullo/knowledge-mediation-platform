@@ -1,0 +1,126 @@
+flowchart TB
+
+    subgraph clients [Clientes]
+
+        HTTP[POST /ask]
+
+        CLI[Scripts offline]
+
+    end
+
+
+
+    subgraph api [API - FastAPI]
+
+        Routes[routes.py]
+
+        Schemas[AskRequest / AskResponse]
+
+    end
+
+
+
+    subgraph application [Camada de aplicação]
+
+        ExecuteRAG[execute_rag]
+
+        RAGPipeline[run_rag_pipeline]
+
+        WikiIndex[index_wikipedia_corpus]
+
+        VectorCtx[index_documents]
+
+        LLMFactory[get_generation_strategy]
+
+    end
+
+
+
+    subgraph strategies [Strategy Pattern]
+
+        Ret[RetrievalStrategy]
+
+        Prompt[PromptStrategy]
+
+        Gen[GenerationStrategy]
+
+    end
+
+
+
+    subgraph infra [Infraestrutura]
+
+        PG[(PostgreSQL + pgvector)]
+
+        Emb[sentence-transformers embeddings]
+
+        Rerank[CrossEncoder rerank]
+
+        Ollama[Ollama phi3]
+
+        OpenAI[OpenAI API opcional]
+
+        WikiAPI[MediaWiki API PT]
+
+    end
+
+
+
+    subgraph evaluation [Avaliação experimental]
+
+        Bench[run_benchmark_experiment]
+
+        BenchJSON[benchmark_questions_v2_final.json]
+
+        Metrics[EM / F1 / latência]
+
+        Export[JSON / CSV]
+
+    end
+
+
+
+    HTTP --> Routes --> ExecuteRAG --> RAGPipeline
+
+    CLI --> WikiIndex --> VectorCtx
+
+    WikiIndex --> WikiAPI
+
+    CLI --> Bench
+
+
+
+    ExecuteRAG --> Ret
+
+    ExecuteRAG --> Prompt
+
+    RAGPipeline --> Gen
+
+    ExecuteRAG --> LLMFactory
+
+    LLMFactory --> Gen
+
+
+
+    Ret --> PG
+
+    Ret --> Emb
+
+    Ret --> Rerank
+
+    VectorCtx --> Emb
+
+    VectorCtx --> PG
+
+    Gen --> Ollama
+
+    Gen --> OpenAI
+
+
+
+    Bench --> BenchJSON
+
+    Bench --> ExecuteRAG
+
+    Bench --> Metrics --> Export
+

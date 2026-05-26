@@ -1,0 +1,56 @@
+sequenceDiagram
+
+    autonumber
+
+    participant Op as Pesquisador
+
+    participant Svc as benchmark_service
+
+    participant Run as benchmark_runner
+
+    participant JSON as benchmark_questions_v2_final.json
+
+    participant UC as execute_rag
+
+    participant M as metrics EM F1
+
+    participant Ex as export JSON CSV
+
+
+
+    Op->>Svc: run_benchmark_experiment(limit, scenarios)
+
+    Svc->>Run: run_benchmark(session)
+
+    Run->>JSON: load_benchmark_questions(limit)
+
+
+
+    loop por cenário llm rag_basic rag_optimized rag_rerank
+
+        loop por pergunta
+
+            Run->>UC: ExecuteRAGInput
+
+            UC-->>Run: answer, chunks, model, tokens
+
+            Run->>M: exact_match + f1
+
+            Run->>Run: latência wall-clock
+
+        end
+
+        Run->>Run: agregar médias por cenário
+
+    end
+
+
+
+    Run-->>Svc: BenchmarkRunReport
+
+    Svc->>Ex: results/benchmark_YYYYMMDD.json
+
+    Svc->>Ex: results/benchmark_YYYYMMDD.csv
+
+    Ex-->>Op: arquivos para gráficos TCC
+
