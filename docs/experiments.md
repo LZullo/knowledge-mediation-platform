@@ -239,6 +239,116 @@ Análise detalhada: [preliminary_results_test_2.md](preliminary_results_test_2.m
 - [discussion_preliminary_findings.md](discussion_preliminary_findings.md)
 - [corpus_evolution.md](corpus_evolution.md)
 
+---
+
+## Teste 3 — corpus refinado (v3)
+
+**Objetivo:** validade experimental (curadoria, complementar, benchmark ampliado) sem mudar arquitetura RAG.
+
+### Passo 1 — Validar títulos Wikipédia
+
+```bash
+python validate_wiki_topics_v3.py
+```
+
+Saída: `results/wiki_topic_validation_wikipedia_benchmark_v3.json`
+
+### Passo 2 — Indexar v3
+
+```bash
+python indexar_corpus.py --version wikipedia_benchmark_v3 --no-incremental
+```
+
+Saída: `results/corpus_report_wikipedia_benchmark_v3.json` (inclui `custom_corpus_indexed`)
+
+### Passo 3 — Benchmark
+
+```bash
+python run_benchmark_ollama.py --corpus-version wikipedia_benchmark_v3
+```
+
+Perguntas: `app/dados/benchmark_questions_v3.json` (18 itens; campos `id`, `subset`)
+
+Export ampliado no CSV: `prompt_chars`, `response_chars`, `rerank_latency_seconds`, `subset`, `question_id`
+
+### Passo 4 — Gráficos
+
+```bash
+python scripts/plot_benchmark_evolution.py ^
+  --runs results/benchmark_20260525_160434.json results/benchmark_20260526_020326.json results/benchmark_<run_id>.json ^
+  --labels v1 v2 v3
+```
+
+Saída: `results/plots/*.png`
+
+### Comparabilidade (importante)
+
+| Comparação | Permitido? |
+|------------|------------|
+| Teste 3 `core_5` vs Teste 1/2 (mesma pergunta) | Qualitativo sim; **F1 direto não**, se gabarito mudou |
+| Teste 3 global (18 perg.) vs Teste 1/2 (5 perg.) | Não sem ponderação |
+| Evolução corpus v1→v2→v3 | Sim via `corpus_version` e relatórios JSON |
+
+Documentação: [preliminary_results_test_3.md](preliminary_results_test_3.md)
+
+---
+
+## Subconjuntos do Benchmark
+
+No Teste 3 (v3), o benchmark foi ampliado preservando um subconjunto histórico para manter comparabilidade e, simultaneamente, introduzir um conjunto complementar voltado à análise experimental.
+
+O arquivo `app/dados/benchmark_questions_v3.json` separa as perguntas por `subset` em:
+
+- `core_5`:
+  - conjunto histórico com as **5 perguntas** preservadas dos testes v1 e v2;
+  - utilizado como base de comparabilidade quantitativa controlada.
+
+- `extended`:
+  - subset complementar introduzido na v3 com **13 perguntas adicionais**;
+  - inclui perguntas relacionadas a embeddings, recuperação da informação, bancos vetoriais, busca semântica e sistemas RAG;
+  - utilizado principalmente para avaliação qualitativa e para ampliação temática com maior diversidade de cenários.
+
+### Observação metodológica
+
+Alterações no benchmark podem afetar a comparabilidade direta de métricas:
+
+- quando perguntas mudam ou são refinadas;
+- quando gabaritos passam por ajustes;
+- quando a cobertura temática e a distribuição de dificuldades se alteram.
+
+Por essa razão, comparações quantitativas devem privilegiar o subset `core_5` (quando o objetivo é rastrear efeitos ao longo do histórico), enquanto resultados envolvendo `extended` devem ser interpretados como robustez experimental e ampliação metodológica, evitando inferências diretas entre populações diferentes de perguntas.
+
+| Subset   | Objetivo                                  |
+| -------- | ----------------------------------------- |
+| core_5   | comparabilidade histórica                 |
+| extended | robustez qualitativa e ampliação temática |
+
+# Validação Qualitativa do Retrieval
+
+A evolução incremental do corpus (v1→v2→v3) pode melhorar ou degradar a qualidade do RAG mesmo quando os indicadores automáticos (como EM/F1) não capturam diretamente o motivo. Por isso, foi necessária uma análise qualitativa: observar manualmente os chunks retornados pelo retrieval vetorial ajuda a entender a *cobertura semântica* e a *adequação do top-k*.
+
+## Limitações de EM/F1
+
+EM/F1 avaliam o quão bem o LLM respondeu à pergunta usando o contexto recuperado, mas não isolam:
+- se os candidatos recuperados eram realmente relevantes
+- se o top-k continha diversidade suficiente de informação útil
+- se o ganho/perda ocorreu por mudança no corpus e não por variações do gerador.
+
+Assim, EM/F1 deve ser complementado por inspeção direta do retrieval.
+
+## Importância do top-1 relevante
+
+O top-1 (o chunk mais similar) é um indicador prático de cobertura imediata do corpus para a pergunta. Quando o top-1 relevante aparece de forma consistente, a chance do RAG produzir uma resposta melhor aumenta. Quando o top-1 é irrelevante, mesmo um LLM forte tende a sofrer.
+
+## Inspeção manual dos chunks recuperados
+
+Durante a validação qualitativa, o pesquisador deve:
+- verificar a relevância semântica do top-1 e dos próximos chunks
+- observar a evolução de `corpus_version` na saída para evidenciar mudanças incrementais
+- checar diversidade (chunks diferentes por URL/título) e repetição (redução de informação nova).
+
+Esse procedimento fortalece metodologicamente o TCC ao fornecer evidências interpretáveis sobre como o retrieval influencia a qualidade final do RAG ao longo dos testes.
+
 ## Troubleshooting
 
 | Problema | Causa provável |

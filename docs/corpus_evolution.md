@@ -18,7 +18,7 @@ Para fortalecer a **validade experimental** sem perder comparabilidade históric
 |--------|------|--------|
 | `wikipedia_benchmark_v1` | inicial | Reproduz o escopo do Teste 1 (9 tópicos, chunk 500/100) |
 | `wikipedia_benchmark_v2` | expandido | Acrescenta tópicos RAG/vetores/stack; indexação **incremental** |
-| `wikipedia_benchmark_v3` | refinado | Mesmos tópicos de v2 com **overlap=150**; reindexação sem apagar v1/v2 |
+| `wikipedia_benchmark_v3` | refinado | Corpus Wikipédia **curado** (validação prévia de títulos) + documentação complementar controlada; overlap=150 secundário |
 
 O rótulo legado `wikipedia_benchmark` nos JSON antigos equivale a **`wikipedia_benchmark_v1`**.
 
@@ -41,7 +41,7 @@ Na v3 refinada, a similaridade é avaliada **no escopo da mesma versão**, para 
 | Versão | chunk_size | overlap | Nota |
 |--------|------------|---------|------|
 | v1, v2 | 500 | 100 | Alinhado à indexação original do Teste 1 |
-| v3 | 500 | 150 | Menor fragmentação entre janelas adjacentes |
+| v3 | 500 | 150 | Overlap secundário; foco principal em curadoria e cobertura real |
 
 Alterações de chunking **não reescrevem** benchmarks passados: cada versão mantém seus documentos em `documents.corpus_version`.
 
@@ -78,9 +78,76 @@ python indexar_corpus.py --version wikipedia_benchmark_v2
 # 4. Benchmark preliminar na v2
 python run_benchmark_preliminary.py --corpus-version wikipedia_benchmark_v2
 
-# 5. (Opcional) Corpus refinado
+# 5. Validar títulos Wikipédia PT (v3)
+python validate_wiki_topics_v3.py
+
+# 6. Corpus refinado (v3)
 python indexar_corpus.py --version wikipedia_benchmark_v3 --no-incremental
+
+# 7. Benchmark Teste 3
+python run_benchmark_ollama.py --corpus-version wikipedia_benchmark_v3
 ```
+
+## Validação prévia de títulos (v3)
+
+Antes da indexação v3, cada título MediaWiki é verificado contra a API da Wikipédia PT:
+
+- `topic_exists` — página encontrada ou resolvida via redirect
+- `redirect_exists` — título solicitado redireciona para outro artigo
+- `fallback_title` — título alternativo quando o principal falha
+- `selected_title` — título efetivamente usado na coleta
+
+Relatório gerado em `results/wiki_topic_validation_wikipedia_benchmark_v3.json`.
+
+**Motivação:** a v2 solicitou 12 tópicos e indexou apenas 2 — muitos títulos eram inexistentes, redirects não resolvidos ou extracts insuficientes. A validação prévia evita planejar cobertura que nunca entra no índice.
+
+## Inclusão controlada de documentação complementar
+
+### Limitações da Wikipédia PT
+
+A Wikipédia em português **não possui** artigo dedicado estável para diversos conceitos de software especializado (ex.: **pgvector**). No Teste 1 e Teste 2, a pergunta sobre pgvector tornou-se um **resultado metodológico**: o pipeline RAG não compensa ausência de evidência documental, e o baseline `llm` pode alucinar.
+
+### Motivação da inclusão manual
+
+Para o Teste 3, foi adotado um **corpus complementar mínimo** em `docs/custom_corpus/`:
+
+- Documentos **curtos**, técnicos e objetivos
+- `source_url` explícita (repositório ou documentação oficial)
+- Rastreio no índice via `source_topic=custom:<id>` e `corpus_version=wikipedia_benchmark_v3`
+- **Sem** mascarar a limitação: a dissertação deve distinguir Wikipédia PT de fonte complementar
+
+Exemplo atual: `docs/custom_corpus/pgvector.md` (fonte: repositório oficial pgvector).
+
+### Impacto esperado
+
+- Permitir avaliar RAG na pergunta histórica sobre pgvector **sem inventar** artigo na Wikipédia
+- Manter honestidade: ganhos de F1 nessa pergunta refletem **inclusão documental controlada**, não melhoria do modelo
+- Não generalizar para “o RAG resolve pgvector” fora do escopo do corpus experimental
+
+## Evolução experimental do corpus
+
+| Fase | Versão | O que mudou | O que **não** mudou |
+|------|--------|-------------|---------------------|
+| Teste 1 | v1 | Corpus inicial Wikipédia (9 tópicos) | — |
+| Teste 2 | v2 | Expansão incremental planejada | Embeddings, retrieval, rerank, phi3 |
+| Teste 3 | v3 | Curadoria + validação + complementar + benchmark 18 perguntas + controle phi3 | Arquitetura RAG, modelos de embedding/rerank |
+
+## Limitações epistemológicas
+
+1. **Melhorar benchmark ≠ melhorar RAG:** gabaritos mais representativos e mais perguntas aumentam validade métrica; não provam modelo superior isoladamente.
+2. **Cobertura documental:** desempenho em tarefas factuais depende da interseção pergunta–índice (evidenciado em pgvector nos Testes 1–2).
+3. **Wikipédia PT:** viés de idioma, atualização e ausência de tópicos de nicho.
+4. **phi3 local:** verbosidade e latência; EM literal permanece severo mesmo com `num_predict` e instrução concisa.
+5. **EM/F1 token-level:** favorece respostas curtas; comparar F1 entre Teste 1/2 e Teste 3 no subconjunto `core_5` exige cautela se os **gabaritos** mudaram (ver Teste 3).
+
+### Comparabilidade de métricas (Teste 3)
+
+| Subconjunto | Perguntas | Comparável com Teste 1/2? |
+|-------------|-----------|---------------------------|
+| `core_5` | Mesmo texto de pergunta | Texto da pergunta sim; **F1 só comparável com gabarito idêntico** — Teste 3 refinou respostas esperadas |
+| `extended` | 13 novas | Não — amplia amostra e estabilidade, sem histórico |
+
+**Regra:** não interpretar aumento de F1 médio global do Teste 3 como ganho puro do pipeline sem separar efeito de gabarito, cobertura e controle de geração.
 
 ## Riscos e vieses remanescentes
 

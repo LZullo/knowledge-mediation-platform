@@ -15,10 +15,18 @@ from sqlalchemy.orm import Session
 
 from app.application.services.vector_context import IndexDocumentItem, index_documents
 from app.dados.chunking import chunk_wikipedia_page, format_chunk_source
+from app.dados.chunking import format_custom_chunk_source
 from app.dados.corpus_registry import (
+    custom_corpus_for_version,
     get_corpus_definition,
     resolve_corpus_version,
     topics_to_index_for_version,
+    wiki_fallbacks_for_version,
+)
+from app.dados.custom_corpus_loader import load_custom_corpus_documents
+from app.dados.wiki_topic_validation import (
+    save_validation_report,
+    validate_wikipedia_topics,
 )
 from app.dados.corpus_stats import get_corpus_version_stats
 from app.dados.deduplication import (
@@ -59,6 +67,8 @@ class WikipediaIndexingReport:
     chunk_overlap: int = 100
     incremental: bool = True
     report_json_path: str | None = None
+    custom_corpus_indexed: tuple[str, ...] = ()
+    wiki_validation_path: str | None = None
 
 
 def _index_items_batched(
@@ -106,6 +116,8 @@ def _save_corpus_report(report: WikipediaIndexingReport) -> Path:
         "chunk_overlap": report.chunk_overlap,
         "incremental": report.incremental,
         "cleared": report.cleared,
+        "custom_corpus_indexed": list(report.custom_corpus_indexed),
+        "wiki_validation_path": report.wiki_validation_path,
     }
     path.write_text(json.dumps(payload, ensure_ascii=False, indent=2), encoding="utf-8")
     logger.info("Relatório de corpus salvo: %s", path)
@@ -127,7 +139,7 @@ def index_wikipedia_corpus_versioned(
 
     - v1: todos os tópicos iniciais (incremental=False na primeira carga recomendada).
     - v2: apenas tópicos novos (incremental=True por padrão).
-    - v3: reindexa todos os tópicos de v2 com overlap refinado (incremental=False).
+    - v3: corpus curado validado + documentação complementar (incremental=False).
     """
     version_id = resolve_corpus_version(corpus_version)
     defn = get_corpus_definition(version_id)
@@ -164,7 +176,21 @@ def index_wikipedia_corpus_versioned(
         similarity_scope_version=version_id,
     )
     allow_reindex_page = defn.tier == "refined"
-    pages, skipped = fetch_wikipedia_corpus(topic_list)
+
+    wiki_validation_path: str | None = None
+    title_map: dict[str, str] = {}
+    if defn.tier == "refined":
+        fallbacks = wiki_fallbacks_for_version(version_id)
+        candidates = {t: fallbacks.get(t) for t in topic_list}
+        validation_entries = validate_wikipedia_topics(candidates)
+        wiki_validation_path = str(
+            save_validation_report(validation_entries, corpus_version=version_id)
+        )
+        for entry in validation_entries:
+            if entry.indexable and entry.selected_title:
+                title_map[entry.topic_requested] = entry.selected_title
+
+    pages, skipped = fetch_wikipedia_corpus(topic_list, title_map=title_map or None)
 
     index_items: list[IndexDocumentItem] = []
     topics_with_chunks: list[str] = []
@@ -228,6 +254,52 @@ def index_wikipedia_corpus_versioned(
                 page.topic,
             )
 
+    custom_topics = custom_corpus_for_version(version_id)
+    custom_indexed: list[str] = []
+    if custom_topics:
+        from app.utils.text_processing import chunk_text, clean_text
+
+        for doc in load_custom_corpus_documents(custom_topics):
+            cleaned = clean_text(doc.content)
+            pieces = chunk_text(
+                cleaned,
+                chunk_size=defn.chunk_size,
+                overlap=defn.chunk_overlap,
+            )
+            for idx, piece in enumerate(pieces):
+                if should_skip_chunk_content(
+                    dedup_state,
+                    content=piece,
+                    source_topic=doc.topic,
+                ):
+                    continue
+                digest = register_accepted_chunk(
+                    dedup_state,
+                    content=piece,
+                    source_topic=doc.topic,
+                )
+                source = format_custom_chunk_source(
+                    topic=doc.topic,
+                    title=doc.title,
+                    source_url=doc.source_url,
+                    chunk_index=idx,
+                    corpus_version=version_id,
+                )
+                index_items.append(
+                    IndexDocumentItem(
+                        content=piece,
+                        source=source,
+                        content_hash=digest,
+                        source_url=doc.source_url,
+                        source_topic=doc.topic,
+                        corpus_version=version_id,
+                    )
+                )
+                chunk_lengths.append(len(piece))
+            if pieces:
+                custom_indexed.append(doc.topic.replace("custom:", ""))
+                topics_with_chunks.append(doc.topic)
+
     document_ids = _index_items_batched(
         session,
         index_items,
@@ -256,6 +328,8 @@ def index_wikipedia_corpus_versioned(
         chunk_size=defn.chunk_size,
         chunk_overlap=defn.chunk_overlap,
         incremental=incremental,
+        custom_corpus_indexed=tuple(custom_indexed),
+        wiki_validation_path=wiki_validation_path,
     )
 
     report_json_path: str | None = None
@@ -282,6 +356,8 @@ def index_wikipedia_corpus_versioned(
         chunk_overlap=report.chunk_overlap,
         incremental=report.incremental,
         report_json_path=report_json_path,
+        custom_corpus_indexed=report.custom_corpus_indexed,
+        wiki_validation_path=report.wiki_validation_path,
     )
 
     stats = get_corpus_version_stats(session, version_id)

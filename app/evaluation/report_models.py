@@ -24,6 +24,12 @@ class BenchmarkQuestionResult:
     chunks_retrieved: int
     llm_provider: str
     model: str
+    question_id: str | None = None
+    subset: str | None = None
+    corpus_version: str | None = None
+    prompt_chars: int = 0
+    response_chars: int = 0
+    rerank_latency_seconds: float | None = None
     persistence_ok: bool = True
     persistence_error: str | None = None
 
@@ -39,6 +45,9 @@ class BenchmarkScenarioSummary:
     mean_generation_latency_seconds: float
     mean_tokens_used: float | None
     mean_chunks_retrieved: float
+    mean_prompt_chars: float = 0.0
+    mean_response_chars: float = 0.0
+    mean_rerank_latency_seconds: float | None = None
 
 
 @dataclass(frozen=True, slots=True)

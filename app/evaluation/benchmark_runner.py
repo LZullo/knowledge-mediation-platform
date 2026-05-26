@@ -75,6 +75,7 @@ def _summarize_scenario(
     scenario: str,
     rows: list[BenchmarkQuestionResult],
 ) -> BenchmarkScenarioSummary:
+    rerank_vals = [r.rerank_latency_seconds for r in rows if r.rerank_latency_seconds is not None]
     return BenchmarkScenarioSummary(
         scenario=scenario,
         questions_count=len(rows),
@@ -89,6 +90,9 @@ def _summarize_scenario(
         ),
         mean_tokens_used=_mean_optional_int([r.tokens_used for r in rows]),
         mean_chunks_retrieved=_mean([float(r.chunks_retrieved) for r in rows]),
+        mean_prompt_chars=_mean([float(r.prompt_chars) for r in rows]),
+        mean_response_chars=_mean([float(r.response_chars) for r in rows]),
+        mean_rerank_latency_seconds=_mean(rerank_vals) if rerank_vals else None,
     )
 
 
@@ -120,6 +124,7 @@ def _run_question(
     rerank_top_k: int | None,
     score_threshold: float | None,
     corpus_versions: tuple[str, ...] | None,
+    corpus_version: str,
     commit: bool,
     safe_persistence: bool,
 ) -> BenchmarkQuestionResult:
@@ -193,6 +198,12 @@ def _run_question(
         chunks_retrieved=len(result.retrieved_chunks),
         llm_provider=llm_provider,
         model=result.model,
+        question_id=item.question_id,
+        subset=item.subset,
+        corpus_version=corpus_version,
+        prompt_chars=result.prompt_chars,
+        response_chars=result.response_chars,
+        rerank_latency_seconds=result.rerank_latency_seconds,
         persistence_ok=persistence_ok,
         persistence_error=persistence_error,
     )
@@ -311,6 +322,7 @@ def run_benchmark(
                     rerank_top_k=rerank_top_k,
                     score_threshold=score_threshold,
                     corpus_versions=retrieval_versions,
+                    corpus_version=version_id,
                     commit=commit_each,
                     safe_persistence=safe_persistence,
                 )

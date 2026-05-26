@@ -50,6 +50,8 @@ class Settings(BaseSettings):
 
     # Geração — temperatura 0 nos benchmarks para reprodutibilidade
     llm_temperature: float = 0.0
+    ollama_num_predict: int = 256
+    ollama_repeat_penalty: float = 1.15
 
 
 @lru_cache

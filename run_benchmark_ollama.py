@@ -18,11 +18,11 @@ from app.infrastructure.db.connection import SessionLocal
 
 logging.basicConfig(level=logging.INFO)
 
-_DEFAULT_QUESTIONS_PATH = (
-    Path(__file__).resolve().parent
-    / "app"
-    / "dados"
-    / "benchmark_questions_v2_final.json"
+_DEFAULT_QUESTIONS_V2 = (
+    Path(__file__).resolve().parent / "app" / "dados" / "benchmark_questions_v2_final.json"
+)
+_DEFAULT_QUESTIONS_V3 = (
+    Path(__file__).resolve().parent / "app" / "dados" / "benchmark_questions_v3.json"
 )
 
 if __name__ == "__main__":
@@ -34,8 +34,8 @@ if __name__ == "__main__":
     )
     parser.add_argument(
         "--questions-path",
-        default=str(_DEFAULT_QUESTIONS_PATH),
-        help="Arquivo JSON congelado com perguntas do benchmark final",
+        default=str(_DEFAULT_QUESTIONS_V3),
+        help="JSON de perguntas (v3: benchmark_questions_v3.json; v2: v2_final)",
     )
     args = parser.parse_args()
 

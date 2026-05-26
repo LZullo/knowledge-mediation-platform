@@ -5,6 +5,7 @@ Exemplos:
   python indexar_corpus.py --version wikipedia_benchmark_v1
   python indexar_corpus.py --version wikipedia_benchmark_v2
   python indexar_corpus.py --version wikipedia_benchmark_v3 --no-incremental
+  python validate_wiki_topics_v3.py
 """
 
 from __future__ import annotations

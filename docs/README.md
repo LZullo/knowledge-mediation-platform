@@ -12,6 +12,7 @@ Documentação pensada para **escrita do TCC**, **apresentação à banca**, **r
 | [corpus_evolution.md](corpus_evolution.md) | Versionamento e expansão do corpus |
 | [preliminary_results_test_1.md](preliminary_results_test_1.md) | Resultados preliminares — Teste 1 (v1) |
 | [preliminary_results_test_2.md](preliminary_results_test_2.md) | Resultados preliminares — Teste 2 (v2) |
+| [preliminary_results_test_3.md](preliminary_results_test_3.md) | Protocolo e resultados — Teste 3 (v3 refinado) |
 | [discussion_preliminary_findings.md](discussion_preliminary_findings.md) | Discussão interpretativa Testes 1 e 2 |
 | [decisions.md](decisions.md) | Registro de decisões (ADR) para defesa |
 | [limitations.md](limitations.md) | Limitações honestas + trabalhos futuros |
@@ -37,7 +38,8 @@ O TCC adota evolução **incremental** do corpus e dos benchmarks, sem apagar ev
 | Teste 1 | `wikipedia_benchmark_v1` (rótulo legado: `wikipedia_benchmark`) | `20260525_160434` | [preliminary_results_test_1.md](preliminary_results_test_1.md) |
 | Expansão incremental | `wikipedia_benchmark_v2` (+35 chunks; índice cumulativo 446) | — | [corpus_evolution.md](corpus_evolution.md) |
 | Teste 2 | `wikipedia_benchmark_v2` | `20260526_020326` | [preliminary_results_test_2.md](preliminary_results_test_2.md) |
-| Discussão consolidada | — | Comparação v1 vs v2 | [discussion_preliminary_findings.md](discussion_preliminary_findings.md) |
+| Teste 3 | `wikipedia_benchmark_v3` (curado + complementar) | _após execução_ | [preliminary_results_test_3.md](preliminary_results_test_3.md) |
+| Discussão consolidada | — | Comparação v1 vs v2 vs v3 | [discussion_preliminary_findings.md](discussion_preliminary_findings.md) |
 
 **Evolução incremental do corpus:** a v2 acrescenta tópicos de recuperação de informação e ferramentas RAG sobre a v1, com deduplicação e indexação incremental (`python indexar_corpus.py --version wikipedia_benchmark_v2`). Relatórios: `results/corpus_report_wikipedia_benchmark_v1.json` e `v2.json`.
 

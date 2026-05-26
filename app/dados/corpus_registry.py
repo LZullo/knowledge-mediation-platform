@@ -1,5 +1,5 @@
 """
-Registro versionado de corpora experimentais (Wikipédia técnica PT).
+Registro versionado de corpora experimentais (Wikipédia técnica PT + complementar).
 
 Cada versão define tópicos, parâmetros de chunking e linhagem para retrieval cumulativo.
 O Teste 1 (benchmark preliminar) corresponde a `wikipedia_benchmark_v1`.
@@ -43,10 +43,54 @@ WIKI_TOPICS_V2_ADDITIONS: tuple[str, ...] = (
     "Geração_de_texto",
 )
 
-# v3: mesmos tópicos que v2, chunking refinado (maior overlap, menos fragmentação).
 WIKI_TOPICS_V2_ALL: tuple[str, ...] = tuple(
     dict.fromkeys(WIKI_TOPICS_V1 + WIKI_TOPICS_V2_ADDITIONS)
 )
+
+# v3: títulos solicitados → fallback opcional (validação prévia via wiki_topic_validation).
+WIKI_TOPICS_V3_CANDIDATES: dict[str, str | None] = {
+    "Aprendizado_de_máquina": None,
+    "PostgreSQL": None,
+    "REST": None,
+    "Docker_(software)": None,
+    "Embedding": "Representação_distribuída",
+    "Banco_de_dados_vetorial": None,
+    "Busca_semântica": None,
+    "Recuperação_de_informação": None,
+    "Similaridade_do_cosseno": None,
+    "Transformer_(modelo_de_linguagem)": "Modelo_transformer",
+    "LangChain": None,
+    "Processamento_de_linguagem_natural": None,
+    "Modelo_de_linguagem": None,
+    "Rede_neural_artificial": None,
+    "Interface_de_programação_de_aplicações": None,
+}
+
+# Lista plana única (sem duplicar Docker)
+WIKI_TOPICS_V3_REQUESTED: tuple[str, ...] = tuple(
+    dict.fromkeys(
+        (
+            "Aprendizado_de_máquina",
+            "PostgreSQL",
+            "REST",
+            "Docker_(software)",
+            "Embedding",
+            "Banco_de_dados_vetorial",
+            "Busca_semântica",
+            "Recuperação_de_informação",
+            "Similaridade_do_cosseno",
+            "Transformer_(modelo_de_linguagem)",
+            "LangChain",
+            "Processamento_de_linguagem_natural",
+            "Modelo_de_linguagem",
+            "Rede_neural_artificial",
+            "Interface_de_programação_de_aplicações",
+        )
+    )
+)
+
+# Documentos complementares (fora da Wikipédia PT) — ver docs/custom_corpus/
+CUSTOM_CORPUS_V3: tuple[str, ...] = ("pgvector",)
 
 
 @dataclass(frozen=True, slots=True)
@@ -60,6 +104,8 @@ class CorpusVersionDefinition:
     chunk_overlap: int
     parent_version: str | None
     added_topics: tuple[str, ...]
+    wiki_topic_fallbacks: dict[str, str | None]
+    custom_corpus_topics: tuple[str, ...]
     motivation: str
     expected_impact: str
     chunking_notes: str
@@ -74,6 +120,8 @@ CORPUS_VERSIONS: dict[str, CorpusVersionDefinition] = {
         chunk_overlap=100,
         parent_version=None,
         added_topics=(),
+        wiki_topic_fallbacks={},
+        custom_corpus_topics=(),
         motivation=(
             "Corpus inicial controlado para o benchmark preliminar (Teste 1), "
             "com tópicos técnicos amplos da Wikipédia em português."
@@ -94,6 +142,8 @@ CORPUS_VERSIONS: dict[str, CorpusVersionDefinition] = {
         chunk_overlap=100,
         parent_version="wikipedia_benchmark_v1",
         added_topics=WIKI_TOPICS_V2_ADDITIONS,
+        wiki_topic_fallbacks={},
+        custom_corpus_topics=(),
         motivation=(
             "Expansão incremental com tópicos de embeddings e busca vetorial, APIs e "
             "ferramentas do pipeline RAG, sem remover documentos da v1."
@@ -109,22 +159,30 @@ CORPUS_VERSIONS: dict[str, CorpusVersionDefinition] = {
     "wikipedia_benchmark_v3": CorpusVersionDefinition(
         version_id="wikipedia_benchmark_v3",
         tier="refined",
-        topics=WIKI_TOPICS_V2_ALL,
+        topics=WIKI_TOPICS_V3_REQUESTED,
         chunk_size=500,
         chunk_overlap=150,
         parent_version="wikipedia_benchmark_v2",
-        added_topics=(),
+        added_topics=WIKI_TOPICS_V3_REQUESTED,
+        wiki_topic_fallbacks={
+            k: v
+            for k, v in WIKI_TOPICS_V3_CANDIDATES.items()
+            if k in WIKI_TOPICS_V3_REQUESTED
+        },
+        custom_corpus_topics=CUSTOM_CORPUS_V3,
         motivation=(
-            "Reindexação com overlap maior para reduzir fragmentação de conceitos "
-            "entre chunks adjacentes."
+            "Refinamento experimental: corpus Wikipédia curado com validação prévia de "
+            "títulos, documentação complementar controlada para lacunas da Wikipédia PT "
+            "(ex.: pgvector), benchmark ampliado e controle de verbosidade do gerador — "
+            "sem alterar embeddings, retrieval ou rerank."
         ),
         expected_impact=(
-            "Chunks mais contextuais; possível redução de ruído na recuperação. "
-            "Coexiste com v1/v2 no banco — benchmarks devem declarar a versão alvo."
+            "Aumentar cobertura documental real; permitir Teste 3 com subconjuntos "
+            "core_5 e extended; manter rastreabilidade v1→v2→v3."
         ),
         chunking_notes=(
-            "chunk_size=500, overlap=150 (+50 vs. v1/v2). Reindexa todos os tópicos de v2 "
-            "com nova marca de versão; não apaga versões anteriores."
+            "chunk_size=500, overlap=150 (secundário). Principal evolução: curadoria, "
+            "validação de títulos e corpus complementar documentado."
         ),
     ),
 }
@@ -159,11 +217,21 @@ def effective_retrieval_versions(version_id: str) -> tuple[str, ...]:
 
 
 def topics_to_index_for_version(version_id: str) -> tuple[str, ...]:
-    """Tópicos que o pipeline de indexação deve tentar baixar nesta execução."""
+    """Tópicos Wikipédia que o pipeline de indexação deve tentar baixar nesta execução."""
     defn = get_corpus_definition(resolve_corpus_version(version_id))
     if defn.tier == "expanded" and defn.added_topics:
         return defn.added_topics
     return defn.topics
+
+
+def wiki_fallbacks_for_version(version_id: str) -> dict[str, str | None]:
+    defn = get_corpus_definition(resolve_corpus_version(version_id))
+    return dict(defn.wiki_topic_fallbacks)
+
+
+def custom_corpus_for_version(version_id: str) -> tuple[str, ...]:
+    defn = get_corpus_definition(resolve_corpus_version(version_id))
+    return defn.custom_corpus_topics
 
 
 # Compatibilidade com código que importa WIKI_TOPICS

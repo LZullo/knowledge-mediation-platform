@@ -1,34 +1,6 @@
 # Versões do corpus experimental
 
-Documento gerado/atualizado automaticamente pelo pipeline de indexação. A seção **Evolução Experimental** é mantida de forma estável para rastreabilidade metodológica do TCC; as seções por versão refletem estatísticas atuais do banco.
-
-## Evolução Experimental
-
-### Teste 1 — corpus inicial (`wikipedia_benchmark_v1`)
-
-O benchmark preliminar **Teste 1** (`run_id=20260525_160434`) foi executado **antes** da introdução do versionamento formal do corpus no banco e nos artefatos de exportação. Nos registros históricos, o corpus aparece como `wikipedia_benchmark`; esse identificador corresponde ao corpus posteriormente padronizado como `wikipedia_benchmark_v1` (tier `initial`, nove tópicos técnicos da Wikipédia PT, chunking 500/100). Os resultados do Teste 1 foram **preservados integralmente** (métricas EM/F1, latências, respostas e `run_id`); apenas a nomenclatura de rastreio foi padronizada na documentação e nos metadados dos artefatos.
-
-O benchmark permanece **metodologicamente válido**: protocolo (três cenários, cinco perguntas, temperatura 0, mesmos modelos) e interpretação dos agregados não dependem do rótulo legado, mas da equivalência documentada entre `wikipedia_benchmark` e `wikipedia_benchmark_v1`.
-
-### Teste 2 — corpus expandido (`wikipedia_benchmark_v2`)
-
-O **Teste 2** utiliza o tier `expanded`: indexação **incremental** sobre a v1, acrescentando tópicos de embeddings, busca vetorial, pgvector, APIs e componentes do pipeline RAG. A motivação metodológica decorre da **cobertura insuficiente** observada no Teste 1 — em particular na pergunta sobre **pgvector**, para a qual o índice inicial não continha contexto adequado, limitando o ganho do RAG independentemente do reranking.
-
-### Teste 3 — corpus refinado (`wikipedia_benchmark_v3`)
-
-A versão **v3** (tier `refined`) reindexa os tópicos da v2 com overlap ampliado (150 caracteres), visando reduzir fragmentação entre chunks adjacentes, **sem** remover versões anteriores. Permite ablação de chunking mantendo comparabilidade entre Teste 1, Teste 2 e Teste 3 via `corpus_version` explícita em cada execução.
-
-### Versionamento, deduplicação e cobertura documental
-
-A partir da expansão planejada, o projeto adotou:
-
-- **Versionamento** por `corpus_version` no banco e nos relatórios de benchmark;
-- **Deduplicação** (hash de conteúdo, bloqueio por `source_topic`, similaridade textual) para mitigar redundância semântica no índice;
-- **Retrieval cumulativo** (ex.: v2 consulta documentos v1 + v2).
-
-A relação entre **cobertura documental** e **desempenho RAG** foi evidenciada no Teste 1: pipelines mais sofisticados não substituem a presença do tema no corpus. A expansão v2 testa empiricamente essa hipótese, mantendo EM/F1 e cenários comparáveis.
-
----
+Documento gerado/atualizado automaticamente pelo pipeline de indexação. Preserva rastreabilidade entre benchmarks (Teste 1 = `wikipedia_benchmark_v1`).
 
 ## wikipedia_benchmark_v1
 
@@ -135,43 +107,60 @@ Mesmos parâmetros de chunk da v1 na expansão; apenas tópicos novos são index
 ### Tópicos solicitados
 
 - `Aprendizado_de_máquina`
-- `Inteligência_artificial`
-- `Rede_neural_artificial`
 - `PostgreSQL`
-- `Docker_(software)`
-- `Interface_de_programação_de_aplicações`
 - `REST`
-- `Banco_de_dados`
-- `Algoritmo`
+- `Docker_(software)`
 - `Embedding`
-- `Sentence-BERT`
 - `Banco_de_dados_vetorial`
 - `Busca_semântica`
 - `Recuperação_de_informação`
 - `Similaridade_do_cosseno`
 - `Transformer_(modelo_de_linguagem)`
 - `LangChain`
-- `FastAPI`
-- `Serviço_web`
-- `Geração_de_texto`
+- `Processamento_de_linguagem_natural`
+- `Modelo_de_linguagem`
+- `Rede_neural_artificial`
+- `Interface_de_programação_de_aplicações`
+
+### Tópicos adicionados (em relação à versão anterior)
+
+- `Aprendizado_de_máquina`
+- `PostgreSQL`
+- `REST`
+- `Docker_(software)`
+- `Embedding`
+- `Banco_de_dados_vetorial`
+- `Busca_semântica`
+- `Recuperação_de_informação`
+- `Similaridade_do_cosseno`
+- `Transformer_(modelo_de_linguagem)`
+- `LangChain`
+- `Processamento_de_linguagem_natural`
+- `Modelo_de_linguagem`
+- `Rede_neural_artificial`
+- `Interface_de_programação_de_aplicações`
+
+### Corpus complementar (documentação curada)
+
+- `docs/custom_corpus/pgvector.md`
 
 ### Estatísticas indexadas (banco)
 
-- **Documentos/chunks:** 0
-- **Tópicos com chunks:** 0
-- **Tamanho médio do chunk (caracteres):** 0.0
+- **Documentos/chunks:** 155
+- **Tópicos com chunks:** 6
+- **Tamanho médio do chunk (caracteres):** 493.7
 
 ### Motivação
 
-Reindexação com overlap maior para reduzir fragmentação de conceitos entre chunks adjacentes.
+Refinamento experimental: corpus Wikipédia curado com validação prévia de títulos, documentação complementar controlada para lacunas da Wikipédia PT (ex.: pgvector), benchmark ampliado e controle de verbosidade do gerador — sem alterar embeddings, retrieval ou rerank.
 
 ### Impacto esperado
 
-Chunks mais contextuais; possível redução de ruído na recuperação. Coexiste com v1/v2 no banco — benchmarks devem declarar a versão alvo.
+Aumentar cobertura documental real; permitir Teste 3 com subconjuntos core_5 e extended; manter rastreabilidade v1→v2→v3.
 
 ### Observações de chunking
 
-chunk_size=500, overlap=150 (+50 vs. v1/v2). Reindexa todos os tópicos de v2 com nova marca de versão; não apaga versões anteriores.
+chunk_size=500, overlap=150 (secundário). Principal evolução: curadoria, validação de títulos e corpus complementar documentado.
 
 ---
 

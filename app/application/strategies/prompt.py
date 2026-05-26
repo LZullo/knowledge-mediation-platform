@@ -34,7 +34,9 @@ class DefaultPromptStrategy:
 
     def build_prompt(self, question: str, context: str) -> str:
         return (
-            "Use apenas o contexto abaixo para responder. Se não houver informação suficiente, diga que não sabe.\n\n"
+            "Use apenas o contexto abaixo para responder. "
+            "Responda de forma objetiva em 1 a 3 frases curtas. "
+            "Se não houver informação suficiente, diga que não sabe.\n\n"
             f"Contexto:\n{context}\n\n"
             f"Pergunta:\n{question}"
         )
@@ -49,7 +51,8 @@ class DirectQuestionPromptStrategy:
 
     def build_prompt(self, question: str, context: str) -> str:
         _ = context
-        return question.strip()
+        q = question.strip()
+        return f"{q}\n\nResponda de forma objetiva em 1 a 3 frases curtas."
 
 
 class RestrictiveRagPromptStrategy:
@@ -65,6 +68,7 @@ class RestrictiveRagPromptStrategy:
     def build_prompt(self, question: str, context: str) -> str:
         return (
             "Responda apenas com base no contexto fornecido. "
+            "Use 1 a 3 frases objetivas, sem repetir a pergunta. "
             "Se não houver informação suficiente no contexto, diga explicitamente que não pode responder.\n\n"
             f"Contexto:\n{context}\n\n"
             f"Pergunta:\n{question}"

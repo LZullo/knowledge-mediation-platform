@@ -138,9 +138,12 @@ def fetch_wikipedia_corpus(
     topics: tuple[str, ...] | None = None,
     *,
     timeout: float = _DEFAULT_TIMEOUT,
+    title_map: dict[str, str] | None = None,
 ) -> tuple[list[WikipediaPage], int]:
     """
     Baixa todas as páginas da lista controlada de tópicos.
+
+    `title_map`: tópico solicitado → título MediaWiki validado para download.
 
     Retorna (páginas válidas, quantidade de tópicos ignorados).
     """
@@ -150,11 +153,19 @@ def fetch_wikipedia_corpus(
 
     with requests.Session() as http:
         for topic in topic_list:
-            page = fetch_wikipedia_page(topic, timeout=timeout, session=http)
+            fetch_title = (title_map or {}).get(topic, topic)
+            page = fetch_wikipedia_page(fetch_title, timeout=timeout, session=http)
             if page is None:
                 skipped += 1
                 continue
-            pages.append(page)
+            pages.append(
+                WikipediaPage(
+                    title=page.title,
+                    content=page.content,
+                    source_url=page.source_url,
+                    topic=topic,
+                )
+            )
 
     logger.info(
         "Corpus Wikipédia: %s páginas indexáveis, %s tópicos ignorados (de %s)",

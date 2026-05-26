@@ -18,17 +18,21 @@ _DEFAULT_QUESTIONS_PATH = Path(__file__).resolve().parent / "benchmark_questions
 class BenchmarkQuestion:
     question: str
     expected_answer: str
+    question_id: str | None = None
+    subset: str | None = None
 
 
 def load_benchmark_questions(
     *,
     path: Path | str | None = None,
     limit: int | None = None,
+    subset: str | None = None,
 ) -> list[BenchmarkQuestion]:
     """
     Carrega perguntas e respostas de referência do arquivo JSON.
 
     `limit` restringe a quantidade avaliada (útil para testes rápidos).
+    `subset` filtra por campo `subset` (ex.: `core_5`, `extended`).
     """
     json_path = Path(path) if path is not None else _DEFAULT_QUESTIONS_PATH
     if not json_path.is_file():
@@ -45,10 +49,22 @@ def load_benchmark_questions(
             continue
         question = str(item.get("question", "")).strip()
         answer = str(item.get("answer", "")).strip()
+        item_subset = item.get("subset")
+        subset_str = str(item_subset).strip() if item_subset is not None else None
+        if subset is not None and subset_str != subset:
+            continue
         if not question or not answer:
             logger.warning("Entrada ignorada (pergunta ou resposta vazia) na linha %s", idx)
             continue
-        questions.append(BenchmarkQuestion(question=question, expected_answer=answer))
+        qid = item.get("id")
+        questions.append(
+            BenchmarkQuestion(
+                question=question,
+                expected_answer=answer,
+                question_id=str(qid).strip() if qid is not None else None,
+                subset=subset_str,
+            )
+        )
 
     if limit is not None:
         if limit < 1:
@@ -56,8 +72,9 @@ def load_benchmark_questions(
         questions = questions[:limit]
 
     logger.info(
-        "Benchmark manual: %s perguntas carregadas de %s",
+        "Benchmark manual: %s perguntas carregadas de %s (subset=%s)",
         len(questions),
         json_path.name,
+        subset or "all",
     )
     return questions

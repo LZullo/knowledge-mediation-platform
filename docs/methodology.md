@@ -60,6 +60,33 @@ O domínio é definido **na origem**, não por filtro pós-hoc em dataset genér
 
 
 
+## Organização do Benchmark Experimental
+
+O benchmark experimental v1→v2→v3 foi organizado em subconjuntos para preservar a comparabilidade histórica e, ao mesmo tempo, permitir uma expansão metodológica controlada.
+
+A separação evita a mistura de populações distintas de perguntas ao interpretar variações de EM/F1 e demais métricas. Em particular:
+
+- **core_5** (conjunto histórico):
+  - contém as **5 perguntas** utilizadas nos testes v1 e v2;
+  - serve como base para comparação quantitativa controlada, preservando o caráter histórico do experimento.
+
+- **extended** (conjunto complementar introduzido na v3):
+  - contém as **13 perguntas adicionais** introduzidas no Teste 3;
+  - foca em perguntas relacionadas a embeddings, recuperação da informação, bancos vetoriais, busca semântica e sistemas RAG;
+  - é utilizado principalmente para robustez interpretativa e análise qualitativa de cobertura temática e adequação do retrieval.
+
+A lógica de comparabilidade deve ser mantida explicitamente:
+
+- **v1 ↔ v2**: comparação quantitativa mais confiável, pois o conjunto base de perguntas (core_5) permanece o mesmo e o procedimento de avaliação foi padronizado.
+- **v3**: refinamento experimental e ampliação metodológica; as métricas envolvendo o benchmark expandido podem refletir tanto efeitos do corpus/curadoria quanto efeitos da expansão do conjunto de perguntas.
+
+Por isso, não deve haver inferência direta baseada em métricas agregadas quando o conjunto de perguntas (subset) diferir entre versões, especialmente quando perguntas e gabaritos passaram por refinamentos.
+
+| Subset   | Objetivo                                  |
+| -------- | ----------------------------------------- |
+| core_5   | comparabilidade histórica                 |
+| extended | robustez qualitativa e ampliação temática |
+
 ## 2. Pipeline de ingestão e indexação
 
 
@@ -341,6 +368,33 @@ ollama pull phi3
 python run_benchmark_ollama.py --corpus-version wikipedia_benchmark_v2 --questions-path app/dados/benchmark_questions_v2_final.json
 ```
 
+## 6.3 Teste 3 — corpus refinado (v3, protocolo controlado)
+
+**Motivação:** a v2 planejou 12 tópicos e indexou 2; lacunas documentais (pgvector) e gabaritos minimalistas limitaram a validade das métricas. A v3 **não** altera embeddings, retrieval nem rerank — refina corpus, benchmark e geração.
+
+**Configuração (registrar no capítulo experimental):**
+
+- `corpus_version`: `wikipedia_benchmark_v3`
+- `questions_path`: `app/dados/benchmark_questions_v3.json` (18 perguntas; subconjuntos `core_5`, `extended`)
+- validação prévia: `python validate_wiki_topics_v3.py` → `results/wiki_topic_validation_wikipedia_benchmark_v3.json`
+- corpus complementar: `docs/custom_corpus/pgvector.md` (fonte oficial documentada)
+- `OLLAMA_NUM_PREDICT=256`, `OLLAMA_REPEAT_PENALTY=1.15` (via `.env` / `Settings`)
+- instrução de prompt: resposta objetiva em 1–3 frases
+
+**Comparabilidade de métricas:**
+
+- **Não** comparar F1 global Teste 3 vs Teste 1/2 sem separar efeitos de gabarito, N perguntas e cobertura.
+- Subconjunto `core_5`: mesmas perguntas históricas; gabaritos refinados → F1 não é diretamente comparável aos JSON antigos.
+
+**Comando de execução (v3):**
+
+```bash
+python validate_wiki_topics_v3.py
+python indexar_corpus.py --version wikipedia_benchmark_v3 --no-incremental
+python run_benchmark_ollama.py --corpus-version wikipedia_benchmark_v3
+```
+
+Documentação: [corpus_evolution.md](corpus_evolution.md), [preliminary_results_test_3.md](preliminary_results_test_3.md).
 
 
 **Não usar HTTP** no experimento principal — evita variância de rede e facilita replicação.

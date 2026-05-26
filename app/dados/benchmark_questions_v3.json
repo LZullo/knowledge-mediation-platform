@@ -1,0 +1,110 @@
+[
+  {
+    "id": "core_01",
+    "subset": "core_5",
+    "question": "O que é machine learning?",
+    "answer": "Aprendizado de máquina é um subcampo da inteligência artificial focado em aprender padrões a partir de dados."
+  },
+  {
+    "id": "core_02",
+    "subset": "core_5",
+    "question": "O que é PostgreSQL?",
+    "answer": "PostgreSQL é um sistema gerenciador de banco de dados objeto-relacional de código aberto."
+  },
+  {
+    "id": "core_03",
+    "subset": "core_5",
+    "question": "O que é REST?",
+    "answer": "REST é um estilo de arquitetura de software para serviços web baseado em HTTP."
+  },
+  {
+    "id": "core_04",
+    "subset": "core_5",
+    "question": "O que é Docker?",
+    "answer": "Docker é uma plataforma de containers baseada em virtualização leve."
+  },
+  {
+    "id": "core_05",
+    "subset": "core_5",
+    "question": "O que é pgvector?",
+    "answer": "pgvector é uma extensão do PostgreSQL para armazenamento e busca por similaridade de vetores."
+  },
+  {
+    "id": "ext_01",
+    "subset": "extended",
+    "question": "Como embeddings auxiliam sistemas RAG?",
+    "answer": "Embeddings representam texto em vetores densos para recuperar trechos semanticamente relevantes antes da geração."
+  },
+  {
+    "id": "ext_02",
+    "subset": "extended",
+    "question": "Qual a função da busca semântica?",
+    "answer": "A busca semântica recupera documentos pelo significado da consulta, não apenas por correspondência literal de termos."
+  },
+  {
+    "id": "ext_03",
+    "subset": "extended",
+    "question": "Qual o papel do retrieval em sistemas RAG?",
+    "answer": "O retrieval seleciona evidências documentais que fundamentam a resposta gerada pelo modelo de linguagem."
+  },
+  {
+    "id": "ext_04",
+    "subset": "extended",
+    "question": "Por que bancos vetoriais são utilizados?",
+    "answer": "Bancos vetoriais armazenam embeddings e permitem consultas por similaridade em escala para pipelines de recuperação."
+  },
+  {
+    "id": "ext_05",
+    "subset": "extended",
+    "question": "Qual a relação entre embeddings e similaridade?",
+    "answer": "Embeddings mapeiam textos para vetores; a similaridade entre vetores indica proximidade semântica entre trechos."
+  },
+  {
+    "id": "ext_06",
+    "subset": "extended",
+    "question": "O que é um embedding?",
+    "answer": "Embedding é uma representação vetorial densa de texto ou outro dado, capturando relações semânticas."
+  },
+  {
+    "id": "ext_07",
+    "subset": "extended",
+    "question": "Como funciona a recuperação de informação?",
+    "answer": "Recuperação de informação localiza documentos relevantes a uma consulta, tradicionalmente por índices ou busca vetorial."
+  },
+  {
+    "id": "ext_08",
+    "subset": "extended",
+    "question": "Qual o papel do reranking em sistemas de recuperação?",
+    "answer": "O reranking reordena candidatos iniciais com um modelo mais preciso, melhorando a qualidade do contexto final."
+  },
+  {
+    "id": "ext_09",
+    "subset": "extended",
+    "question": "O que é LangChain?",
+    "answer": "LangChain é um framework para compor pipelines com modelos de linguagem, ferramentas e recuperação de contexto."
+  },
+  {
+    "id": "ext_10",
+    "subset": "extended",
+    "question": "O que é um transformer em modelos de linguagem?",
+    "answer": "Transformer é uma arquitetura neural baseada em atenção, base de muitos modelos de linguagem modernos."
+  },
+  {
+    "id": "ext_11",
+    "subset": "extended",
+    "question": "Qual a diferença entre retrieval e geração?",
+    "answer": "Retrieval busca evidências no corpus; geração produz a resposta em linguagem natural a partir do contexto recuperado."
+  },
+  {
+    "id": "ext_12",
+    "subset": "extended",
+    "question": "O que é processamento de linguagem natural?",
+    "answer": "Processamento de linguagem natural estuda como computadores analisam, compreendem e geram texto humano."
+  },
+  {
+    "id": "ext_13",
+    "subset": "extended",
+    "question": "Como a similaridade de cosseno é usada em busca vetorial?",
+    "answer": "A similaridade de cosseno mede o ângulo entre vetores de consulta e documento para ranquear vizinhos semânticos."
+  }
+]

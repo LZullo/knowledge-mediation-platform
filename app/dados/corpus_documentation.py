@@ -63,6 +63,15 @@ def generate_corpus_versions_markdown(session: Session) -> str:
             sections.append("")
             sections.append(_format_topics(defn.added_topics))
             sections.append("")
+        if defn.custom_corpus_topics:
+            sections.append("### Corpus complementar (documentação curada)")
+            sections.append("")
+            sections.append(
+                _format_topics(
+                    tuple(f"docs/custom_corpus/{t}.md" for t in defn.custom_corpus_topics)
+                )
+            )
+            sections.append("")
         sections.append("### Estatísticas indexadas (banco)")
         sections.append("")
         sections.append(f"- **Documentos/chunks:** {doc_count}")

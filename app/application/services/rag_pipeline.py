@@ -14,6 +14,9 @@ from app.application.providers.factory import get_generation_strategy
 from app.application.strategies.generation import GenerationStrategy
 from app.application.strategies.prompt import DefaultPromptStrategy, PromptStrategy
 from app.application.strategies.retrieval import PgVectorRetrievalStrategy, RetrievalStrategy
+from app.application.strategies.retrieval.rerank_pgvector_strategy import (
+    RerankPgVectorRetrievalStrategy,
+)
 from app.infrastructure.llm import LLMGenerationResult
 from app.infrastructure.vectorstore import SimilarDocument
 
@@ -32,6 +35,9 @@ class RAGPipelineResult:
     retrieval_latency_seconds: float = 0.0
     generation_latency_seconds: float = 0.0
     total_latency_seconds: float = 0.0
+    rerank_latency_seconds: float | None = None
+    prompt_chars: int = 0
+    response_chars: int = 0
 
 
 def cosine_distance_to_similarity(cosine_distance: float) -> float:
@@ -75,7 +81,12 @@ def run_rag_pipeline(
 
     retrieval_started = time.perf_counter()
     documents = retrieval_st.retrieve(session, question, top_k)
-    retrieval_latency_seconds = time.perf_counter() - retrieval_started
+    rerank_latency_seconds: float | None = None
+    if isinstance(retrieval_st, RerankPgVectorRetrievalStrategy):
+        retrieval_latency_seconds = retrieval_st.last_pgvector_latency_seconds
+        rerank_latency_seconds = retrieval_st.last_rerank_latency_seconds
+    else:
+        retrieval_latency_seconds = time.perf_counter() - retrieval_started
 
     retrieved_chunks = [d.content for d in documents]
     similarity_scores = [cosine_distance_to_similarity(d.cosine_distance) for d in documents]
@@ -98,4 +109,7 @@ def run_rag_pipeline(
         retrieval_latency_seconds=retrieval_latency_seconds,
         generation_latency_seconds=generation_latency_seconds,
         total_latency_seconds=total_latency_seconds,
+        rerank_latency_seconds=rerank_latency_seconds,
+        prompt_chars=len(prompt_text),
+        response_chars=len(llm_out.text),
     )

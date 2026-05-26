@@ -36,11 +36,15 @@ def _build_chat_ollama(
     base_url: str,
     temperature: float,
     seed: int | None,
+    num_predict: int,
+    repeat_penalty: float,
 ) -> ChatOllama:
     kwargs: dict = {
         "model": model,
         "base_url": base_url,
         "temperature": temperature,
+        "num_predict": num_predict,
+        "repeat_penalty": repeat_penalty,
     }
     if seed is not None:
         kwargs["seed"] = seed
@@ -104,11 +108,14 @@ class OllamaLLMProvider:
                     time.sleep(sleep_seconds)
                     continue
 
+                settings = get_settings()
                 llm = _build_chat_ollama(
                     model=self._model,
                     base_url=self._base_url,
                     temperature=self._temperature,
                     seed=self._seed,
+                    num_predict=settings.ollama_num_predict,
+                    repeat_penalty=settings.ollama_repeat_penalty,
                 )
 
                 message = llm.invoke(prompt)

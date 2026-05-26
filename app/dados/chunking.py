@@ -56,6 +56,24 @@ def format_chunk_source(chunk: WikiChunk, *, corpus_version: str | None = None) 
     return base
 
 
+def format_custom_chunk_source(
+    *,
+    topic: str,
+    title: str,
+    source_url: str,
+    chunk_index: int,
+    corpus_version: str | None = None,
+) -> str:
+    """Serializa metadados de corpus complementar curado."""
+    base = (
+        f"custom_corpus|topic={topic}|title={title}"
+        f"|url={source_url}|chunk={chunk_index}"
+    )
+    if corpus_version:
+        return f"{base}|corpus_version={corpus_version}"
+    return base
+
+
 def wiki_chunks_to_index_items(
     chunks: list[WikiChunk],
     *,

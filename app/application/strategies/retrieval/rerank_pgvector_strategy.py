@@ -5,7 +5,8 @@ Recuperação vetorial expandida + reranking semântico (CrossEncoder).
 from __future__ import annotations
 
 import logging
-from dataclasses import dataclass
+import time
+from dataclasses import dataclass, field
 
 from sqlalchemy.orm import Session
 
@@ -50,6 +51,8 @@ class RerankPgVectorRetrievalStrategy:
     rerank_top_k: int = 10
     score_threshold: float | None = None
     corpus_versions: tuple[str, ...] | None = None
+    last_pgvector_latency_seconds: float = field(default=0.0, init=False, repr=False)
+    last_rerank_latency_seconds: float = field(default=0.0, init=False, repr=False)
 
     def __post_init__(self) -> None:
         if self.rerank_top_k < 1:
@@ -62,11 +65,13 @@ class RerankPgVectorRetrievalStrategy:
         expanded_k = max(self.rerank_top_k, top_k)
         query_embedding = embed_text(question)
         store = PgVectorStore(session)
+        pg_started = time.perf_counter()
         candidates = store.search_similar_by_embedding(
             query_embedding,
             top_k=expanded_k,
             corpus_versions=self.corpus_versions,
         )
+        self.last_pgvector_latency_seconds = time.perf_counter() - pg_started
 
         logger.info(
             "Rerank: pgvector recuperou %s chunks (expandido=%s, final=%s)",
@@ -89,7 +94,9 @@ class RerankPgVectorRetrievalStrategy:
             )
 
         passages = [doc.content for doc in candidates]
+        rerank_started = time.perf_counter()
         rerank_scores = score_question_passages(question, passages)
+        self.last_rerank_latency_seconds = time.perf_counter() - rerank_started
 
         scored: list[tuple[SimilarDocument, float]] = list(zip(candidates, rerank_scores, strict=True))
         scored.sort(key=lambda item: item[1], reverse=True)
