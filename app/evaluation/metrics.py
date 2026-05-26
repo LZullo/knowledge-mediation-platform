@@ -1,5 +1,8 @@
 """
 Métricas de avaliação no padrão SQuAD (EM e F1).
+
+Normalização: minúsculas, remoção de pontuação, artigos (PT/EN), colapso de espaços.
+Não remove stopwords gerais — alinhado a benchmarks QA tradicionais (SQuAD oficial).
 """
 
 from __future__ import annotations

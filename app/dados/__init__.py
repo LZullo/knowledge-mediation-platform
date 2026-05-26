@@ -1,14 +1,12 @@
-from app.dados.squad_pt_indexer import SquadPTIndexingReport, index_squad_pt_contexts
-from app.dados.squad_pt_loader import get_questions, load_squad_pt
-from app.dados.squad_pt_models import SquadPTQuestion
-from app.dados.squad_pt_runner import run_squad_benchmark, similarity
+"""Dados e corpus — imports leves no pacote (evita carregar indexador/LLM no `import app.dados`)."""
+
+from app.dados.benchmark_loader import BenchmarkQuestion, load_benchmark_questions
+from app.dados.corpus_registry import CORPUS_VERSIONS, get_corpus_definition, resolve_corpus_version
 
 __all__ = [
-    "SquadPTQuestion",
-    "SquadPTIndexingReport",
-    "get_questions",
-    "index_squad_pt_contexts",
-    "load_squad_pt",
-    "run_squad_benchmark",
-    "similarity",
+    "BenchmarkQuestion",
+    "CORPUS_VERSIONS",
+    "get_corpus_definition",
+    "load_benchmark_questions",
+    "resolve_corpus_version",
 ]

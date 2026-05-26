@@ -49,6 +49,7 @@ class RerankPgVectorRetrievalStrategy:
 
     rerank_top_k: int = 10
     score_threshold: float | None = None
+    corpus_versions: tuple[str, ...] | None = None
 
     def __post_init__(self) -> None:
         if self.rerank_top_k < 1:
@@ -61,7 +62,11 @@ class RerankPgVectorRetrievalStrategy:
         expanded_k = max(self.rerank_top_k, top_k)
         query_embedding = embed_text(question)
         store = PgVectorStore(session)
-        candidates = store.search_similar_by_embedding(query_embedding, top_k=expanded_k)
+        candidates = store.search_similar_by_embedding(
+            query_embedding,
+            top_k=expanded_k,
+            corpus_versions=self.corpus_versions,
+        )
 
         logger.info(
             "Rerank: pgvector recuperou %s chunks (expandido=%s, final=%s)",

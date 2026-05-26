@@ -26,23 +26,33 @@ Use este documento na **defesa oral** para demonstrar escolha consciente, não a
 
 ---
 
-## ADR-02 — SQuAD-pt como corpus e benchmark
+## ADR-02 — Wikipédia técnica (PT) + benchmark manual JSON
 
-**Contexto:** comparar cenários RAG em português com perguntas e respostas de referência.
+**Contexto:** comparar cenários RAG em português com corpus técnico controlado e respostas de referência para EM/F1.
 
-**Decisão:** dataset **`nunorc/squad_v1_pt`** — contexts indexados; Q&A para métricas EM/F1. Indexação com filtro opcional **`topics`** para corpus de tecnologia (ver `squad_pt_indexer.py`).
+**Decisão:**
+
+- **Indexação:** páginas listadas em `WIKI_TOPICS` (`wikipedia_loader.py`) via MediaWiki API; pipeline `index_wikipedia_corpus` (`wikipedia_indexer.py`).
+- **Benchmark:** perguntas/respostas gold em JSON + `benchmark_loader.py`, com **conjunto congelado** para garantir comparabilidade e reprodutibilidade.
+- Script operacional: `python indexar_dados.py` (chunk 500 / overlap 100 por padrão).
 
 **Alternativas:**
 
 | Alternativa | Trade-off |
 |-------------|-----------|
-| Corpus próprio (ex. São Manuel) | Mais alinhado ao domínio, menos padronização de métricas |
-| EN SQuAD traduzido | Menos representativo de linguagem natural PT |
+| SQuAD-pt (Hugging Face) | Mais perguntas, menos controle de domínio e de alinhamento página↔pergunta |
+| Corpus institucional fechado | Mais realista, menos padronização de métricas |
 | Apenas LLM sem gold | Impossível EM/F1 rigoroso |
 
-**Vantagens:** métricas comparáveis à literatura; reprodutibilidade; Hugging Face `datasets`.
+**Vantagens:** domínio técnico explícito; sem dependência de `datasets`; rastreio por `source` (título, URL, chunk); reprodutível com lista fixa de tópicos.
 
-**Limitações:** domínio Wikipedia/geral; possível desalinhamento pergunta↔chunk após chunking; viés do dataset (ver [limitations.md](limitations.md)).
+**Limitações:** N pequeno no JSON atual; qualidade da Wikipédia; possível desalinhamento pergunta↔chunk após chunking (ver [limitations.md](limitations.md)).
+
+**Notas de metodologia (versão final do TCC):**
+
+- v1 foi tratada como **preliminar exploratória**.
+- A tentativa inicial da v2 foi **inválida** (falha antes de exportar JSON/CSV).
+- A v2 oficial/final usa `corpus_version=wikipedia_benchmark_v2` e o conjunto congelado `app/dados/benchmark_questions_v2_final.json` (5 perguntas), configurado explicitamente via `questions_path`.
 
 ---
 
@@ -98,7 +108,7 @@ Use este documento na **defesa oral** para demonstrar escolha consciente, não a
 
 **Vantagens:** sem custo de API no rerank; reprodutível; padrão em pipelines de busca.
 
-**Limitações:** modelo treinado principalmente em EN; latência CPU/GPU adicional; não é o mesmo domínio do SQuAD-pt.
+**Limitações:** modelo treinado principalmente em EN; latência CPU/GPU adicional; domínio técnico PT da Wikipédia pode divergir do treino do cross-encoder.
 
 ---
 
@@ -142,15 +152,23 @@ Use este documento na **defesa oral** para demonstrar escolha consciente, não a
 
 ---
 
-## ADR-10 — OpenAI para geração (não para embeddings/rerank)
+## ADR-10 — Provedor de LLM plugável (Ollama padrão, OpenAI opcional)
 
-**Contexto:** qualidade de resposta em linguagem natural para defesa do protótipo.
+**Contexto:** gerar respostas sem bloquear o TCC por API paga; permitir comparar cenários RAG localmente.
 
-**Decisão:** **OpenAI Chat Completions** para geração; embeddings e rerank locais.
+**Decisão:**
 
-**Vantagens:** melhor fluência que modelos open pequenos; integração simples.
+- Variável `LLM_PROVIDER` (`ollama` | `openai`), padrão **`ollama`**.
+- **Ollama:** `OllamaLLMProvider` + `langchain-ollama` (`ChatOllama`), modelo padrão **`phi3`**, URL `http://localhost:11434`.
+- **OpenAI:** `OpenAILLMProvider` / `OpenAIGenerationStrategy` (cliente existente).
+- Factory: `get_llm_provider()` e `get_generation_strategy()` em `app/application/providers/factory.py`.
+- Embeddings e rerank permanecem **locais** (sem LangChain).
 
-**Limitações:** dependência de API, custo, variabilidade entre versões do modelo — documentar `OPENAI_MODEL` e data do experimento.
+**Alternativas:** só OpenAI; HTTP direto à API Ollama sem LangChain.
+
+**Vantagens:** benchmark e `/ask` reproduzíveis sem `OPENAI_API_KEY`; troca de modelo via `.env`; mesma interface `GenerationStrategy`.
+
+**Limitações:** phi3 local pode ser mais lento e menos fluente que GPT; `tokens_used` é `None` no Ollama; checagem de saúde via `GET /api/tags` antes da geração.
 
 ---
 
@@ -160,7 +178,7 @@ Use este documento na **defesa oral** para demonstrar escolha consciente, não a
 
 **Decisão:** módulo `app/evaluation/` chama caso de uso diretamente; export JSON/CSV.
 
-**Alternativas:** apenas `squad_pt_runner` HTTP.
+**Alternativas:** benchmark apenas via HTTP `/ask`.
 
 **Vantagens:** remove variância de rede; mais fácil repetir na mesma máquina.
 
@@ -172,9 +190,9 @@ Use este documento na **defesa oral** para demonstrar escolha consciente, não a
 
 **Contexto:** modelo `Document` minimalista (4 colunas).
 
-**Decisão:** proveniência em string `source` (ex. `squad-pt/train#12#chunk-0`).
+**Decisão:** proveniência em string `source` (ex. `wikipedia|topic=PostgreSQL|title=...|url=...|chunk=0`).
 
-**Alternativas:** JSONB `metadata`, tabela de títulos SQuAD.
+**Alternativas:** JSONB `metadata`, tabela relacional de páginas.
 
 **Vantagens:** sem migração complexa; suficiente para rastreio em prompts.
 

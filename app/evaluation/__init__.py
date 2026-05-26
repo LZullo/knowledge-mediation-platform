@@ -1,4 +1,8 @@
-from app.evaluation.benchmark_runner import run_benchmark
+from app.evaluation.benchmark_runner import (
+    PRELIMINARY_SCENARIOS,
+    run_benchmark,
+    run_benchmark_preliminary,
+)
 from app.evaluation.benchmark_service import BenchmarkExperimentOutput, run_benchmark_experiment
 from app.evaluation.export import export_benchmark, export_benchmark_csv, export_benchmark_json
 from app.evaluation.metrics import exact_match_score, f1_score, normalize_answer
@@ -19,6 +23,8 @@ __all__ = [
     "export_benchmark_json",
     "f1_score",
     "normalize_answer",
+    "PRELIMINARY_SCENARIOS",
     "run_benchmark",
     "run_benchmark_experiment",
+    "run_benchmark_preliminary",
 ]

@@ -4,19 +4,23 @@ Transparência sobre o que o sistema **não faz** (ou faz de forma simplificada)
 
 ---
 
-## 1. Dependência da OpenAI na geração
+## 1. Geração: Ollama local (padrão) ou OpenAI
 
-**Limitação:** respostas finais dependem de API externa (`OPENAI_API_KEY`), com custo por token e possível indisponibilidade.
+**Situação atual:** o padrão do projeto é **`LLM_PROVIDER=ollama`** com modelo **`phi3`** (sem custo de API na geração). OpenAI permanece disponível via `LLM_PROVIDER=openai`.
 
-**Impacto no TCC:** resultados variam com modelo (`gpt-3.5-turbo` vs `gpt-4o-mini`); reprodutibilidade exige registrar modelo e data.
+**Limitação (Ollama):** latência maior em CPU, qualidade de redação inferior a modelos proprietários grandes; `tokens_used` não preenchido nos logs.
 
-**Trabalho futuro:** avaliar LLMs open locais (Llama, Mistral) com mesma metodologia; comparar custo × qualidade.
+**Limitação (OpenAI, se usada):** custo por token, dependência de rede e quota.
+
+**Impacto no TCC:** registrar `LLM_PROVIDER`, `OLLAMA_MODEL` ou `OPENAI_MODEL` e data de cada rodada de benchmark.
+
+**Trabalho futuro:** comparar phi3 vs GPT no mesmo protocolo EM/F1; quantificar trade-off custo × qualidade.
 
 ---
 
-## 2. Benchmark limitado por amostra e custo
+## 2. Benchmark limitado por amostra e tempo de execução
 
-**Limitação:** `limit` de perguntas (ex. 50–1000) por tempo e custo de API; uma execução por configuração, sem intervalo de confiança automático.
+**Limitação:** o JSON atual tem poucas perguntas; ampliar N aumenta tempo (phi3 local + rerank). Uma execução por configuração, sem intervalo de confiança automático.
 
 **Impacto:** generalização estatística fraca se N for pequeno.
 
@@ -64,19 +68,19 @@ Transparência sobre o que o sistema **não faz** (ou faz de forma simplificada)
 
 ---
 
-## 7. Viés e cobertura do SQuAD-pt
+## 7. Cobertura limitada do corpus Wikipédia
 
-**Limitação:** domínio Wikipedia-like; perguntas artificiais; contexts duplicados após deduplicação reduzem diversidade.
+**Limitação:** apenas tópicos em `WIKI_TOPICS`; benchmark manual com N pequeno; texto enciclopédico (não documentação oficial de produtos).
 
-**Impacto:** resultados não generalizam para domínios fechados (jurídico, médico, municipal).
+**Impacto:** resultados não generalizam para domínios fechados (jurídico, médico, municipal) sem reindexar.
 
-**Trabalho futuro:** segundo corpus (ex. documentos institucionais) mantendo mesma arquitetura de avaliação.
+**Trabalho futuro:** ampliar `WIKI_TOPICS` e o conjunto de perguntas do benchmark (ex.: a partir de `benchmark_questions_v2_final.json`); segundo corpus (PDFs institucionais) com mesma arquitetura de avaliação.
 
 ---
 
 ## 8. Desalinhamento pergunta ↔ chunk após indexação
 
-**Limitação:** na consulta, só a **pergunta** é embedada; o context SQuAD original não é reenviado ao modelo.
+**Limitação:** na consulta, só a **pergunta** é embedada; o texto completo da página Wikipédia não é reenviado ao modelo.
 
 **Impacto:** se o chunk errado entrar no top_k, o LLM pode alucinar mesmo com prompt restritivo.
 
@@ -126,10 +130,10 @@ Transparência sobre o que o sistema **não faz** (ou faz de forma simplificada)
 
 | Área | Limitação atual | Próximo passo |
 |------|-----------------|---------------|
-| Geração | API OpenAI | LLM local / híbrido |
+| Geração | phi3 local (padrão) | Comparar com OpenAI no mesmo protocolo |
 | Retrieval | Só vetor | Híbrido BM25+vetor |
 | Rerank | Latência + modelo EN | Modelo PT + top_k adaptativo |
-| Dados | SQuAD-pt amostral | Corpus de domínio + N maior |
+| Dados | `WIKI_TOPICS` + JSON pequeno | Mais tópicos + mais perguntas gold |
 | Avaliação | EM/F1 | Métricas semânticas + humano |
 
 Reconhecer limitações **não enfraquece** o TCC — demonstra maturidade científica e agenda de continuidade.

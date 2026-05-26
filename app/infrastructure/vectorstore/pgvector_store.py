@@ -32,10 +32,22 @@ class PgVectorStore:
         content: str,
         source: str,
         embedding: list[float],
+        content_hash: str | None = None,
+        source_url: str | None = None,
+        source_topic: str | None = None,
+        corpus_version: str | None = None,
     ) -> Document:
         """Insere um documento com embedding já calculado."""
         self._validate_embedding(embedding)
-        row = Document(content=content, source=source, embedding=embedding)
+        row = Document(
+            content=content,
+            source=source,
+            embedding=embedding,
+            content_hash=content_hash,
+            source_url=source_url,
+            source_topic=source_topic,
+            corpus_version=corpus_version,
+        )
         self._session.add(row)
         self._session.flush()
         return row
@@ -45,6 +57,7 @@ class PgVectorStore:
         query_embedding: list[float],
         *,
         top_k: int,
+        corpus_versions: tuple[str, ...] | None = None,
     ) -> list[SimilarDocument]:
         """
         Retorna os `top_k` documentos mais próximos por distância cosseno ao embedding da consulta.
@@ -55,11 +68,11 @@ class PgVectorStore:
         self._validate_embedding(query_embedding)
 
         distance_expr = Document.embedding.cosine_distance(query_embedding)
-        stmt = (
-            select(Document, distance_expr.label("distance"))
-            .order_by(distance_expr)
-            .limit(top_k)
-        )
+        stmt = select(Document, distance_expr.label("distance"))
+        if corpus_versions:
+            stmt = stmt.where(Document.corpus_version.in_(corpus_versions))
+        stmt = stmt.order_by(distance_expr).limit(top_k)
+
         result = self._session.execute(stmt).all()
         out: list[SimilarDocument] = []
         for doc, dist in result:

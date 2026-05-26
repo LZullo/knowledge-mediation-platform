@@ -11,7 +11,7 @@ Construir um **assistente de perguntas e respostas** em português que compare:
 3. RAG com prompt mais restritivo e `top_k` configurável
 4. RAG com **reranking** semântico após recuperação expandida
 
-A base documental experimental usa **contexts do SQuAD-pt** indexados em PostgreSQL com **pgvector**.
+A base documental experimental usa **páginas técnicas da Wikipédia em português** (`WIKI_TOPICS`) indexadas em PostgreSQL com **pgvector**. O benchmark usa **perguntas manuais** em `benchmark_questions_v2_final.json` (conjunto congelado da versão oficial).
 
 ## Princípio central: Strategy Pattern sem pipeline duplicado
 
@@ -21,9 +21,9 @@ O fluxo RAG é **único** (`run_rag_pipeline`). O que muda entre cenários são 
 |-----------|------------------|------------------------|
 | `RetrievalStrategy` | Obter trechos relevantes | `NoRetrieval`, `PgVector`, `RerankPgVector` |
 | `PromptStrategy` | Montar contexto e prompt | `Direct`, `Default`, `Restrictive` |
-| `GenerationStrategy` | Chamar o LLM | `OpenAIGenerationStrategy` |
+| `GenerationStrategy` | Chamar o LLM | `OpenAIGenerationStrategy`, `OllamaGenerationStrategy` |
 
-O caso de uso `execute_rag` **seleciona** as strategies conforme `RAGScenario` e registra a execução em `experiment_runs`. Isso evita copiar lógica de retrieval ou geração para cada experimento.
+O provedor concreto é escolhido por `LLM_PROVIDER` (`app/application/providers/factory.py`). O caso de uso `execute_rag` **seleciona** retrieval e prompt conforme `RAGScenario`, injeta a strategy de geração via factory e registra a execução em `experiment_runs`.
 
 ```text
 /ask → execute_rag → run_rag_pipeline(retrieval, prompt, generation)
@@ -54,11 +54,12 @@ Diagrama de componentes: [diagrams/architecture.mmd](diagrams/architecture.mmd).
 | `vector_context.py` | `index_document(s)` e bridge para embeddings + `PgVectorStore` |
 | `indexing_pipeline.py` | Ingestão offline de `.txt` (legado/auxiliar) |
 
-### 4. Strategies (`app/application/strategies/`)
+### 4. Strategies e providers (`app/application/`)
 
-- **Retrieval** (`retrieval/pgvector.py`, `retrieval/rerank_pgvector_strategy.py`)
-- **Prompt** (`prompt.py`)
-- **Generation** (`generation.py` → cliente OpenAI)
+- **Retrieval** (`strategies/retrieval/pgvector.py`, `rerank_pgvector_strategy.py`)
+- **Prompt** (`strategies/prompt.py`)
+- **Generation** (`strategies/generation.py`) — adapta o contrato `generate(prompt) -> LLMGenerationResult`
+- **Providers** (`providers/ollama_provider.py`, `openai_provider.py`, `factory.py`) — Ollama via `langchain_ollama.ChatOllama`; OpenAI via `infrastructure/llm/openai_client.py`
 
 ### 5. Infraestrutura (`app/infrastructure/`)
 
@@ -72,7 +73,7 @@ Diagrama de componentes: [diagrams/architecture.mmd](diagrams/architecture.mmd).
 
 ### 6. Dados e avaliação
 
-- **`app/dados/`**: loader SQuAD-pt, indexação de contexts, runner HTTP opcional.
+- **`app/dados/`**: loader/indexação Wikipédia, chunking, `benchmark_loader`, JSON de perguntas.
 - **`app/evaluation/`**: EM/F1, benchmark reproduzível, export JSON/CSV.
 
 ## Fluxo ponta a ponta: consulta (`/ask`)
@@ -83,7 +84,7 @@ Diagrama de componentes: [diagrams/architecture.mmd](diagrams/architecture.mmd).
    - **Retrieval:** embedding da pergunta → pgvector (`ORDER BY cosine_distance LIMIT k`).
    - **Rerank (se `rag_rerank`):** recupera `rerank_top_k` candidatos → CrossEncoder → mantém `top_k` finais.
    - **Prompt:** concatena `[source]\ncontent` com separador `---`.
-   - **Generation:** envia prompt à OpenAI; retorna texto e tokens.
+   - **Generation:** `get_generation_strategy()` → Ollama (`phi3`) ou OpenAI; retorna texto e tokens (se disponível).
 4. Scores de similaridade na resposta convertem distância cosseno em valor ~[0,1] (`cosine_distance_to_similarity`).
 5. Registro em `experiment_runs` para auditoria.
 
@@ -91,16 +92,15 @@ Sequência detalhada: [diagrams/ask_sequence.mmd](diagrams/ask_sequence.mmd).
 
 ## Fluxo ponta a ponta: indexação
 
-1. **SQuAD-pt:** `load_squad_pt` carrega o split Hugging Face.
-2. **Filtro tech (`tech_only`):** `is_tech_squad_item` em `title` + `context` + `question` (`squad_pt_filter.py`); irrelevantes não seguem no pipeline.
-3. **Coleta:** até `limit` contexts únicos (deduplicação por `context` durante a varredura).
-4. **Chunking:** `clean_text` → `chunk_text` → `index_documents`.
-5. **`index_documents`:** `embed_texts` em lote → `PgVectorStore.insert_document` para cada chunk.
-6. Campo **`source`** identifica origem (ex.: `squad-pt/train#42#chunk-0`) — única “metadata” estruturada hoje.
+1. **`WIKI_TOPICS`:** lista fixa de títulos MediaWiki em `wikipedia_loader.py`.
+2. **Coleta:** `fetch_wikipedia_corpus` — API `pt.wikipedia.org`; páginas curtas ou falhas entram em `topics_skipped`.
+3. **Chunking:** `chunk_wikipedia_page` — `clean_text` → `chunk_text` (padrão 500 / overlap 100).
+4. **`index_documents`:** `embed_texts` em lote → `PgVectorStore.insert_document` para cada chunk.
+5. Campo **`source`:** `wikipedia|topic=...|title=...|url=...|chunk=N` — única metadata estruturada hoje.
 
-Script operacional na raiz: `python indexar_dados.py`.
+Script operacional na raiz: `python indexar_dados.py` (`index_wikipedia_corpus`, opcional `clear_documents=True`).
 
-Não há pipeline paralelo: a mesma função `index_documents` serve indexação `.txt` e SQuAD-pt.
+A função genérica `index_documents` também suporta outros pares `(content, source)` (ex. ingestão `.txt` legada).
 
 ## PgVectorStore
 
@@ -114,13 +114,13 @@ Não há pipeline paralelo: a mesma função `index_documents` serve indexação
 |-------|--------|-----------|
 | Embedding (index + query) | MiniLM L6 v2 (384D) | Local (sentence-transformers) |
 | Reranking | MS MARCO MiniLM CrossEncoder | Local |
-| Geração | OpenAI (configurável, ex. gpt-3.5-turbo) | API externa |
+| Geração | Ollama `phi3` (padrão) ou OpenAI | Local ou API externa |
 
-Separação intencional: **custo de API concentrado na geração**; recuperação e rerank reproduzíveis offline.
+Separação intencional: **embeddings e rerank sempre locais**; geração configurável (`LLM_PROVIDER`) sem alterar o pipeline RAG.
 
 ## Pipeline de avaliação (`app/evaluation/`)
 
-- **`benchmark_runner`:** loop cenários × perguntas SQuAD-pt via `execute_rag`.
+- **`benchmark_runner`:** loop cenários × perguntas do JSON via `execute_rag`.
 - **`metrics`:** EM e F1 com normalização estilo SQuAD (+ artigos em português).
 - **`export`:** JSON completo + CSV para gráficos do TCC.
 
@@ -144,8 +144,9 @@ Para adicionar um novo cenário experimental:
 | SQLAlchemy 2 | ORM e sessões |
 | PostgreSQL + pgvector | Persistência e busca vetorial |
 | sentence-transformers | Embeddings + CrossEncoder |
-| OpenAI API | Geração de linguagem natural |
-| Hugging Face `datasets` | SQuAD-pt |
+| Ollama + langchain-ollama | Geração local (padrão: phi3) |
+| OpenAI API | Geração opcional (`LLM_PROVIDER=openai`) |
+| MediaWiki API | Corpus Wikipédia PT |
 | Pydantic Settings | Configuração por ambiente |
 
 Deploy lógico: [diagrams/deployment.mmd](diagrams/deployment.mmd).

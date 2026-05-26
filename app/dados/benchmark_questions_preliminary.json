@@ -1,0 +1,22 @@
+[
+  {
+    "question": "O que é machine learning?",
+    "answer": "Subcampo da inteligência artificial."
+  },
+  {
+    "question": "O que é PostgreSQL?",
+    "answer": "Sistema gerenciador de banco de dados objeto relacional."
+  },
+  {
+    "question": "O que é REST?",
+    "answer": "Estilo de arquitetura de software."
+  },
+  {
+    "question": "O que é Docker?",
+    "answer": "Plataforma de containers."
+  },
+  {
+    "question": "O que é pgvector?",
+    "answer": "Extensão do PostgreSQL para busca vetorial."
+  }
+]

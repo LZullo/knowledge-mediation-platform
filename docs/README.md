@@ -9,6 +9,10 @@ Documentação pensada para **escrita do TCC**, **apresentação à banca**, **r
 | [architecture.md](architecture.md) | Capítulo de arquitetura / diagrama de componentes |
 | [methodology.md](methodology.md) | Metodologia experimental e pipeline de dados |
 | [experiments.md](experiments.md) | Protocolo de benchmark e análise de resultados |
+| [corpus_evolution.md](corpus_evolution.md) | Versionamento e expansão do corpus |
+| [preliminary_results_test_1.md](preliminary_results_test_1.md) | Resultados preliminares — Teste 1 (v1) |
+| [preliminary_results_test_2.md](preliminary_results_test_2.md) | Resultados preliminares — Teste 2 (v2) |
+| [discussion_preliminary_findings.md](discussion_preliminary_findings.md) | Discussão interpretativa Testes 1 e 2 |
 | [decisions.md](decisions.md) | Registro de decisões (ADR) para defesa |
 | [limitations.md](limitations.md) | Limitações honestas + trabalhos futuros |
 | [diagrams/](diagrams/) | Diagramas Mermaid (slides e texto) |
@@ -19,10 +23,27 @@ Guia rápido na raiz do repositório: [../README.md](../README.md).
 
 ```
 Wikipédia (tópicos controlados) → extract texto → chunk + embedding → pgvector
-Pergunta (benchmark manual JSON) → /ask ou benchmark → retrieve → prompt → OpenAI → métricas EM/F1
+Pergunta (benchmark manual JSON) → /ask ou benchmark → retrieve → prompt → LLM (Ollama phi3 ou OpenAI) → métricas EM/F1
 ```
 
 **Cenários comparados:** `llm` | `rag_basic` | `rag_optimized` | `rag_rerank`
+
+## Fluxo experimental v1 → v2 e rastreabilidade
+
+O TCC adota evolução **incremental** do corpus e dos benchmarks, sem apagar evidências anteriores.
+
+| Etapa | Corpus | Benchmark (`run_id`) | Documentação |
+|-------|--------|----------------------|--------------|
+| Teste 1 | `wikipedia_benchmark_v1` (rótulo legado: `wikipedia_benchmark`) | `20260525_160434` | [preliminary_results_test_1.md](preliminary_results_test_1.md) |
+| Expansão incremental | `wikipedia_benchmark_v2` (+35 chunks; índice cumulativo 446) | — | [corpus_evolution.md](corpus_evolution.md) |
+| Teste 2 | `wikipedia_benchmark_v2` | `20260526_020326` | [preliminary_results_test_2.md](preliminary_results_test_2.md) |
+| Discussão consolidada | — | Comparação v1 vs v2 | [discussion_preliminary_findings.md](discussion_preliminary_findings.md) |
+
+**Evolução incremental do corpus:** a v2 acrescenta tópicos de recuperação de informação e ferramentas RAG sobre a v1, com deduplicação e indexação incremental (`python indexar_corpus.py --version wikipedia_benchmark_v2`). Relatórios: `results/corpus_report_wikipedia_benchmark_v1.json` e `v2.json`.
+
+**Preservação dos benchmarks históricos:** ficheiros em `results/benchmark_*.json` e `.csv` **não devem ser sobrescritos** nem ter métricas recalculadas retroativamente. Metadados de nomenclatura (ex.: `corpus_version` no Teste 1) podem ser padronizados apenas quando documentados como equivalência, sem alterar EM/F1/latências/respostas.
+
+**Importância da rastreabilidade:** cada execução exporta `run_id`, `corpus_version`, modelos de embedding/rerank/LLM e agregados por cenário — condição necessária para comparar Teste 1 e Teste 2 na dissertação e para replicar o protocolo (ver [experiments.md](experiments.md), secção comparação v1 vs v2).
 
 ## Passo a passo — reproduzir localmente
 
@@ -55,7 +76,9 @@ cp .env.example .env
 Ajustar em `.env`:
 
 - `DATABASE_URL=postgresql+psycopg://postgres:postgres@127.0.0.1:5433/mba`
-- `OPENAI_API_KEY=...`
+- `LLM_PROVIDER=ollama` (padrão do projeto) ou `openai`
+- `OLLAMA_MODEL=phi3` e `OLLAMA_BASE_URL=http://localhost:11434` (geração local)
+- `OPENAI_API_KEY=...` (somente se `LLM_PROVIDER=openai`)
 - `VECTOR_DIMENSIONS=384` (MiniLM)
 
 ### 3. Criar tabelas
@@ -114,13 +137,25 @@ make run
 
 ### 6. Testes rápidos
 
-**Retrieval** (local, sem OpenAI):
+**Retrieval** (local, sem LLM):
 
 ```bash
 python test_retrieval.py
+python validar_retrieval.py
 ```
 
-**Consulta RAG** (`POST /ask`):
+**Ollama** (geração local; padrão `phi3` via `OLLAMA_MODEL`):
+
+```bash
+ollama pull phi3
+curl http://localhost:11434/api/tags
+
+python test_ollama.py
+python test_rag_ollama.py
+python run_benchmark_ollama.py
+```
+
+**Consulta RAG** (`POST /ask` — usa o provedor de `LLM_PROVIDER`):
 
 ```json
 {
@@ -164,7 +199,7 @@ Saídas em `tcc-project/results/`:
 
 - Python 3.11+
 - Docker (PostgreSQL + pgvector)
-- Chave **OpenAI** (geração de respostas)
+- **Ollama** rodando localmente (padrão: modelo `phi3`) **ou** chave **OpenAI** se `LLM_PROVIDER=openai`
 - Conexão à internet para a MediaWiki API (`pt.wikipedia.org`)
 
 ## Indexação — parâmetros principais
@@ -175,7 +210,7 @@ Saídas em `tcc-project/results/`:
 | `clear_documents` | `False` | Apaga `documents` antes de indexar |
 | `chunk_size` / `chunk_overlap` | `500` / `100` | Granularidade dos chunks |
 
-Corpus e benchmark: `app/dados/wikipedia_loader.py`, `app/dados/benchmark_questions.json`.
+Corpus e benchmark (v2 oficial): `app/dados/wikipedia_loader.py`, `app/dados/benchmark_questions_v2_final.json`.
 
 ## Estrutura do repositório
 
@@ -183,12 +218,12 @@ Corpus e benchmark: `app/dados/wikipedia_loader.py`, `app/dados/benchmark_questi
 tcc-project/
 ├── app/                    # Código da aplicação
 │   ├── api/                # FastAPI (rotas, schemas)
-│   ├── application/        # Casos de uso, pipeline RAG, strategies
+│   ├── application/        # Casos de uso, pipeline RAG, strategies, providers (LLM)
 │   ├── core/               # Configuração (Settings)
 │   ├── dados/              # Wikipédia: loader, chunking, indexação, benchmark JSON
 │   ├── evaluation/         # Métricas EM/F1, benchmark, export
 │   ├── experiments/        # Lotes internos → experiment_runs
-│   ├── infrastructure/     # DB, embeddings, pgvector, OpenAI, rerank
+│   ├── infrastructure/     # DB, embeddings, pgvector, cliente OpenAI, rerank
 │   └── utils/              # chunking, limpeza de texto
 ├── docs/                   # Esta documentação
 ├── results/                # Saídas de benchmark (gitignored)
@@ -222,6 +257,24 @@ Renderize os `.mmd` no [Mermaid Live Editor](https://mermaid.live) ou no VS Code
 | `scenario` | Retrieval | Prompt | top_k |
 |------------|-----------|--------|-------|
 | `llm` | nenhum | pergunta direta | — |
-| `rag_basic` | pgvector | contexto + instrução padrão | 3 (fixo) |
+| `rag_basic` | pgvector | contexto + instrução padrão | configurável (padrão 3) |
 | `rag_optimized` | pgvector | contexto restritivo | configurável (padrão 5) |
 | `rag_rerank` | pgvector expandido + CrossEncoder | contexto restritivo | final configurável (padrão 3), `rerank_top_k` padrão 10 |
+
+## Provedor de LLM (Ollama vs OpenAI)
+
+| Variável | Padrão | Função |
+|----------|--------|--------|
+| `LLM_PROVIDER` | `ollama` | `ollama` ou `openai` |
+| `OLLAMA_MODEL` | `phi3` | Modelo no Ollama (`ollama pull phi3`) |
+| `OLLAMA_BASE_URL` | `http://localhost:11434` | Endpoint do servidor Ollama |
+| `OPENAI_MODEL` | `gpt-3.5-turbo` | Usado só com `LLM_PROVIDER=openai` |
+
+Seleção em código: `app/application/providers/factory.py` (`get_llm_provider`, `get_generation_strategy`).
+
+| Strategy | Classe | Provedor |
+|----------|--------|----------|
+| Geração OpenAI | `OpenAIGenerationStrategy` | `openai_client.generate_from_prompt` |
+| Geração Ollama | `OllamaGenerationStrategy` | `OllamaLLMProvider` + `langchain_ollama.ChatOllama` |
+
+Dependência: `langchain-ollama` em `requirements.txt`.

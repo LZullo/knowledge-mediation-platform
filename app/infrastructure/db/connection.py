@@ -48,8 +48,15 @@ def get_db() -> Generator[Session, None, None]:
         db.close()
 
 
-def create_tables() -> None:
+def create_tables(*, migrate: bool = True) -> None:
     """Cria tabelas a partir dos metadados ORM (desenvolvimento / bootstrap)."""
     import app.infrastructure.db.models  # noqa: F401
+    from app.infrastructure.db.schema_migrations import (
+        migrate_documents,
+        migrate_experiment_runs,
+    )
 
     Base.metadata.create_all(bind=engine)
+    if migrate:
+        migrate_experiment_runs(engine)
+        migrate_documents(engine)

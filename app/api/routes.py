@@ -5,6 +5,7 @@ from app.api.deps import get_db
 from app.api.schemas.ask import AskRequest, AskResponse
 from app.application.use_cases.execute_rag import execute_rag
 from app.core.config import get_settings
+from app.application.providers.ollama_provider import OllamaProviderError
 from app.infrastructure.llm import OpenAIClientError
 
 router = APIRouter()
@@ -30,6 +31,6 @@ def ask(
         result = execute_rag(db, body.to_execute_input())
     except ValueError as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc
-    except OpenAIClientError as exc:
+    except (OpenAIClientError, OllamaProviderError) as exc:
         raise HTTPException(status_code=502, detail=str(exc)) from exc
     return AskResponse.from_pipeline(result)

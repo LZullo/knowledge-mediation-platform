@@ -5,11 +5,13 @@ Comportamentos variáveis via Strategy (retrieval, prompt, generation).
 
 from __future__ import annotations
 
+import time
 from dataclasses import dataclass
 
 from sqlalchemy.orm import Session
 
-from app.application.strategies.generation import GenerationStrategy, OpenAIGenerationStrategy
+from app.application.providers.factory import get_generation_strategy
+from app.application.strategies.generation import GenerationStrategy
 from app.application.strategies.prompt import DefaultPromptStrategy, PromptStrategy
 from app.application.strategies.retrieval import PgVectorRetrievalStrategy, RetrievalStrategy
 from app.infrastructure.llm import LLMGenerationResult
@@ -27,6 +29,9 @@ class RAGPipelineResult:
     prompt: str
     tokens_used: int | None
     model: str
+    retrieval_latency_seconds: float = 0.0
+    generation_latency_seconds: float = 0.0
+    total_latency_seconds: float = 0.0
 
 
 def cosine_distance_to_similarity(cosine_distance: float) -> float:
@@ -64,9 +69,13 @@ def run_rag_pipeline(
 
     retrieval_st: RetrievalStrategy = retrieval or PgVectorRetrievalStrategy()
     prompt_st: PromptStrategy = prompt or DefaultPromptStrategy()
-    generation_st: GenerationStrategy = generation or OpenAIGenerationStrategy()
+    generation_st: GenerationStrategy = generation or get_generation_strategy()
 
+    pipeline_started = time.perf_counter()
+
+    retrieval_started = time.perf_counter()
     documents = retrieval_st.retrieve(session, question, top_k)
+    retrieval_latency_seconds = time.perf_counter() - retrieval_started
 
     retrieved_chunks = [d.content for d in documents]
     similarity_scores = [cosine_distance_to_similarity(d.cosine_distance) for d in documents]
@@ -74,7 +83,10 @@ def run_rag_pipeline(
     context_text = prompt_st.build_context(question, documents)
     prompt_text = prompt_st.build_prompt(question, context_text)
 
+    generation_started = time.perf_counter()
     llm_out: LLMGenerationResult = generation_st.generate(prompt_text)
+    generation_latency_seconds = time.perf_counter() - generation_started
+    total_latency_seconds = time.perf_counter() - pipeline_started
 
     return RAGPipelineResult(
         answer=llm_out.text,
@@ -83,4 +95,7 @@ def run_rag_pipeline(
         prompt=prompt_text,
         tokens_used=llm_out.tokens_used,
         model=llm_out.model,
+        retrieval_latency_seconds=retrieval_latency_seconds,
+        generation_latency_seconds=generation_latency_seconds,
+        total_latency_seconds=total_latency_seconds,
     )

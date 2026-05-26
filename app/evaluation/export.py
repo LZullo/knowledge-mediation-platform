@@ -59,6 +59,11 @@ def export_benchmark_csv(
     path = directory / f"benchmark_{rid}.csv"
     fieldnames = [
         "run_id",
+        "corpus_version",
+        "embedding_model",
+        "rerank_model",
+        "llm_model",
+        "corpus_document_count",
         "scenario",
         "question",
         "expected_answer",
@@ -66,9 +71,14 @@ def export_benchmark_csv(
         "exact_match",
         "f1",
         "latency_seconds",
+        "retrieval_latency_seconds",
+        "generation_latency_seconds",
+        "total_pipeline_latency_seconds",
         "tokens_used",
         "chunks_retrieved",
+        "llm_provider",
         "model",
+        "persistence_ok",
     ]
 
     with path.open("w", encoding="utf-8", newline="") as fh:
@@ -78,6 +88,11 @@ def export_benchmark_csv(
             writer.writerow(
                 {
                     "run_id": report.run_id,
+                    "corpus_version": report.corpus_version,
+                    "embedding_model": report.embedding_model,
+                    "rerank_model": report.rerank_model,
+                    "llm_model": report.llm_model,
+                    "corpus_document_count": report.corpus_document_count,
                     "scenario": row.scenario,
                     "question": row.question,
                     "expected_answer": row.expected_answer,
@@ -85,9 +100,14 @@ def export_benchmark_csv(
                     "exact_match": row.exact_match,
                     "f1": row.f1,
                     "latency_seconds": row.latency_seconds,
+                    "retrieval_latency_seconds": row.retrieval_latency_seconds,
+                    "generation_latency_seconds": row.generation_latency_seconds,
+                    "total_pipeline_latency_seconds": row.total_pipeline_latency_seconds,
                     "tokens_used": row.tokens_used if row.tokens_used is not None else "",
                     "chunks_retrieved": row.chunks_retrieved,
+                    "llm_provider": row.llm_provider,
                     "model": row.model,
+                    "persistence_ok": row.persistence_ok,
                 }
             )
 

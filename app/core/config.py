@@ -35,10 +35,21 @@ class Settings(BaseSettings):
     rerank_top_k_default: int = 10
     rerank_score_threshold: float | None = None
 
+    # Provedor de LLM: openai | ollama
+    llm_provider: str = "ollama"
+
     # OpenAI — chat completions (ex.: gpt-3.5-turbo, gpt-4o-mini)
     openai_api_key: str = ""
     openai_model: str = "gpt-3.5-turbo"
     openai_base_url: str | None = None
+
+    # Ollama local — http://localhost:11434
+    ollama_model: str = "phi3"
+    ollama_base_url: str = "http://localhost:11434"
+    ollama_seed: int | None = None
+
+    # Geração — temperatura 0 nos benchmarks para reprodutibilidade
+    llm_temperature: float = 0.0
 
 
 @lru_cache
