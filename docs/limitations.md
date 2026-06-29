@@ -2,6 +2,8 @@
 
 Transparência sobre o que o sistema **não faz** (ou faz de forma simplificada) fortalece a credibilidade na banca. Cada limitação abaixo inclui **impacto** e **oportunidade de pesquisa futura**.
 
+**Ameaças à validade do benchmark final (v3):** consolidadas em [final_experimental_analysis.md](final_experimental_analysis.md) (secção 8) — EM ≈ 0, F1 token-level, corpus cumulativo, amostra de 18 perguntas, hardware local, subjetividade da inspeção qualitativa do retrieval.
+
 ---
 
 ## 1. Geração: Ollama local (padrão) ou OpenAI

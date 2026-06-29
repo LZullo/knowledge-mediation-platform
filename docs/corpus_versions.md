@@ -162,6 +162,31 @@ Aumentar cobertura documental real; permitir Teste 3 com subconjuntos core_5 e e
 
 chunk_size=500, overlap=150 (secundário). Principal evolução: curadoria, validação de títulos e corpus complementar documentado.
 
+### Resultados do benchmark final (Teste 3)
+
+| Atributo | Valor |
+|----------|--------|
+| `run_id` | `20260526_171347` |
+| Índice consultado no benchmark | **601** chunks (v1+v2+v3 cumulativos) |
+| Perguntas avaliadas | 18 |
+| F1 médio `rag_basic` | 0,239 |
+| F1 médio `llm` | 0,189 |
+| Validação qualitativa retrieval | `results/retrieval_validation_wikipedia_benchmark_v3.txt` |
+
+Documentação analítica: [final_experimental_analysis.md](final_experimental_analysis.md).
+
+---
+
+## Tabela comparativa — versões do corpus
+
+| Versão | Tier | Chunks (rodada isolada) | Chunks no benchmark cumulativo | Tópicos indexados (rodada) | Teste associado |
+|--------|------|-------------------------|--------------------------------|----------------------------|-----------------|
+| `wikipedia_benchmark_v1` | inicial | 411 | 411 (Teste 1) | 9 | Teste 1 — `20260525_160434` |
+| `wikipedia_benchmark_v2` | expandido | +35 | 446 (Teste 2) | +2 | Teste 2 — `20260526_020326` |
+| `wikipedia_benchmark_v3` | refinado | 155 | 601 (Teste 3) | 6 + custom:pgvector | Teste 3 — `20260526_171347` |
+
+**Nota:** o rótulo legado `wikipedia_benchmark` (Teste 1) equivale a `wikipedia_benchmark_v1`.
+
 ---
 
 _Atualize executando `python indexar_corpus.py --version <id>` ou `python -m app.dados.corpus_documentation` após indexação._

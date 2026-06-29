@@ -2,6 +2,8 @@
 
 Este documento sintetiza a **interpretação acadêmica** dos benchmarks preliminares `20260525_160434` (corpus v1, Teste 1) e `20260526_020326` (corpus v2, Teste 2). Os números citados provêm dos artefatos em `results/`; a discussão não substitui avaliação humana nem inferência estatística sobre populações maiores.
 
+**Benchmark final (Teste 3):** discussão consolidada, validação qualitativa e conclusão experimental em [final_experimental_analysis.md](final_experimental_analysis.md) (`run_id` `20260526_171347`).
+
 ---
 
 ## 1. RAG superando o baseline `llm`

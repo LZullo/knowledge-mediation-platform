@@ -20,7 +20,7 @@ Este capítulo documenta **o pipeline de dados**, **os cenários comparados** e 
 
 - **Texto das páginas** → chunking → embeddings → tabela `documents` (base do RAG).
 
-- **Perguntas de avaliação (v2 oficial):** `app/dados/benchmark_questions_v2_final.json` — pares `question` / `answer` (gold), **não** enviados ao modelo na consulta. Conjunto congelado (5 perguntas) para comparabilidade entre execuções.
+- **Perguntas de avaliação:** Testes 1–2 — `app/dados/benchmark_questions_v2_final.json` (5 perguntas, `core_5` histórico). **Teste 3 (final):** `app/dados/benchmark_questions_v3.json` (18 perguntas: `core_5` + `extended`). Pares `question` / `answer` (gold) **não** são enviados ao modelo na consulta.
 
 
 
@@ -394,8 +394,9 @@ python indexar_corpus.py --version wikipedia_benchmark_v3 --no-incremental
 python run_benchmark_ollama.py --corpus-version wikipedia_benchmark_v3
 ```
 
-Documentação: [corpus_evolution.md](corpus_evolution.md), [preliminary_results_test_3.md](preliminary_results_test_3.md).
+Documentação: [corpus_evolution.md](corpus_evolution.md), [final_experimental_analysis.md](final_experimental_analysis.md) (métricas, figuras, discussão).
 
+**Resultados finais (Teste 3, `run_id` `20260526_171347`):** tabelas, figuras e interpretação em [final_experimental_analysis.md](final_experimental_analysis.md) §4–4.6. Equivalência Teste 1 (`wikipedia_benchmark` ≡ v1): mesma referência, §3.
 
 **Não usar HTTP** no experimento principal — evita variância de rede e facilita replicação.
 
@@ -411,21 +412,17 @@ Detalhes operacionais: [experiments.md](experiments.md).
 
 ## 7. O que reportar na dissertação
 
+Sugestão de subseções (consolidadas em [final_experimental_analysis.md](final_experimental_analysis.md)):
 
+1. **Desenho experimental** — cenários, N perguntas, subconjuntos `core_5` / `extended`, hardware.
+2. **Configuração** — `LLM_PROVIDER`, modelos (phi3), k, chunking, `corpus_version`.
+3. **Métricas** — EM, F1, latência, decomposição retrieval/geração/rerank.
+4. **Resultados** — tabelas a partir de `results/benchmark_20260526_171347.csv` e comparação v1/v2/v3.
+5. **Validação qualitativa do retrieval** — inspeção top-k (`retrieval_validation_wikipedia_benchmark_v3.txt`).
+6. **Discussão e limitações** — trade-offs qualidade × latência; ameaças à validade.
+7. **Conclusão experimental** — viabilidade do RAG local; sem generalizações amplas.
 
-Sugestão de subseções:
-
-
-
-1. **Desenho experimental** — cenários, N perguntas, `WIKI_TOPICS`, hardware.
-
-2. **Configuração** — `LLM_PROVIDER`, modelos (phi3 / OpenAI), k, chunking, versões de dependências.
-
-3. **Métricas** — EM, F1, latência, tokens (média ± desvio se repetir runs).
-
-4. **Resultados** — tabelas/gráficos a partir do CSV.
-
-5. **Discussão** — trade-offs (ver [decisions.md](decisions.md), [limitations.md](limitations.md)).
+Referências: [decisions.md](decisions.md), [limitations.md](limitations.md).
 
 
 

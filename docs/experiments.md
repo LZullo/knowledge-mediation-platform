@@ -1,6 +1,6 @@
 # Experimentos e análise de resultados
 
-Guia operacional para executar, exportar e transformar resultados em material do TCC (tabelas e gráficos).
+Guia operacional para **executar** benchmarks e exportar artefatos. **Métricas finais, figuras e discussão:** [final_experimental_analysis.md](final_experimental_analysis.md) (fonte canônica). Navegação: [documentation_index.md](documentation_index.md).
 
 ## Pré-condições
 
@@ -173,13 +173,28 @@ Documente explicitamente em cada rodada:
 - [ ] `LLM_PROVIDER`, `OLLAMA_MODEL` ou `OPENAI_MODEL` e data da execução  
 - [ ] Versão do código (commit git)
 
-## Comparativo esperado (hipóteses — preencher com seus dados)
+## Hipóteses vs resultados observados
 
-| Comparação | O que observar |
-|------------|----------------|
-| llm vs rag_basic | Ganho de EM/F1 com contexto |
-| rag_basic vs rag_optimized | Efeito do prompt restritivo e k |
-| rag_optimized vs rag_rerank | Ganho do rerank vs custo de latência |
+| Comparação | Hipótese | Resultado (benchmark final v3) |
+|------------|----------|--------------------------------|
+| `llm` vs `rag_basic` | RAG eleva F1 com contexto adequado | F1 0,189 → **0,239** (18 perg.) — ver [final_experimental_analysis.md](final_experimental_analysis.md) §4 |
+| `rag_basic` vs `rag_rerank` | Rerank melhora precisão do top-k | F1 médio **inferior** com maior latência neste corpus — §4.1 |
+| Evolução v1→v3 | Cobertura documental afeta RAG | Tendência de ganho; v3 não comparável 1:1 (N perguntas e gabaritos) — §4.3, §4.6 |
+
+---
+
+## Teste 1 histórico (legacy) — rastreabilidade
+
+| Atributo | Valor |
+|----------|-------|
+| `run_id` | `20260525_160434` |
+| Artefatos | `results/benchmark_20260525_160434.json`, `.csv` |
+| Campo legado | `corpus = "wikipedia_benchmark"` |
+| Equivalência | `corpus_version = "wikipedia_benchmark_v1"` |
+
+Os ficheiros históricos foram **preservados sem alteração estrutural** das métricas; não houve reprocessamento retroativo. A preservação de resultados experimentais anteriores sustenta rastreabilidade e validade comparativa longitudinal — prática recomendada quando o protocolo evolui (versionamento de corpus, refinamento de gabaritos) sem invalidar a série documentada.
+
+Documentação: [preliminary_results_test_1.md](preliminary_results_test_1.md), [final_experimental_analysis.md](final_experimental_analysis.md) (secção 3).
 
 ---
 
@@ -189,8 +204,9 @@ Artefatos oficiais (preservar sem reescrita):
 
 | Teste | `run_id` | Corpus | JSON |
 |-------|----------|--------|------|
-| Teste 1 | `20260525_160434` | `wikipedia_benchmark_v1` | `results/benchmark_20260525_160434.json` |
+| Teste 1 | `20260525_160434` | `wikipedia_benchmark_v1` (rótulo legado: `wikipedia_benchmark`) | `results/benchmark_20260525_160434.json` |
 | Teste 2 | `20260526_020326` | `wikipedia_benchmark_v2` | `results/benchmark_20260526_020326.json` |
+| Teste 3 (final) | `20260526_171347` | `wikipedia_benchmark_v3` | `results/benchmark_20260526_171347.json` |
 
 ### Tabela comparativa — F1 e latência médias
 
@@ -243,7 +259,7 @@ Análise detalhada: [preliminary_results_test_2.md](preliminary_results_test_2.m
 
 ## Teste 3 — corpus refinado (v3)
 
-**Objetivo:** validade experimental (curadoria, complementar, benchmark ampliado) sem mudar arquitetura RAG.
+**`run_id`:** `20260526_171347` | **Métricas e figuras:** [final_experimental_analysis.md](final_experimental_analysis.md) §4–4.6
 
 ### Passo 1 — Validar títulos Wikipédia
 
@@ -271,15 +287,15 @@ Perguntas: `app/dados/benchmark_questions_v3.json` (18 itens; campos `id`, `subs
 
 Export ampliado no CSV: `prompt_chars`, `response_chars`, `rerank_latency_seconds`, `subset`, `question_id`
 
-### Passo 4 — Gráficos
+### Passo 4 — Gráficos finais
 
 ```bash
 python scripts/plot_benchmark_evolution.py ^
-  --runs results/benchmark_20260525_160434.json results/benchmark_20260526_020326.json results/benchmark_<run_id>.json ^
+  --runs results/benchmark_20260525_160434.json results/benchmark_20260526_020326.json results/benchmark_20260526_171347.json ^
   --labels v1 v2 v3
 ```
 
-Saída: `results/plots/*.png`
+Saída em `results/plots/`: `f1_by_scenario.png`, `latency_by_scenario.png`, `evolution_f1_v1_v2_v3.png`, `tradeoff_f1_latency_rerank.png` (descrição em [final_experimental_analysis.md](final_experimental_analysis.md) §4.5).
 
 ### Comparabilidade (importante)
 
@@ -289,7 +305,15 @@ Saída: `results/plots/*.png`
 | Teste 3 global (18 perg.) vs Teste 1/2 (5 perg.) | Não sem ponderação |
 | Evolução corpus v1→v2→v3 | Sim via `corpus_version` e relatórios JSON |
 
-Documentação: [preliminary_results_test_3.md](preliminary_results_test_3.md)
+Documentação: [preliminary_results_test_3.md](preliminary_results_test_3.md), [final_experimental_analysis.md](final_experimental_analysis.md)
+
+### Passo 5 — Validação qualitativa do retrieval
+
+```bash
+python validar_retrieval.py
+```
+
+Saída: `results/retrieval_validation_wikipedia_benchmark_v3.txt`
 
 ---
 
@@ -323,31 +347,13 @@ Por essa razão, comparações quantitativas devem privilegiar o subset `core_5`
 | core_5   | comparabilidade histórica                 |
 | extended | robustez qualitativa e ampliação temática |
 
-# Validação Qualitativa do Retrieval
+---
 
-A evolução incremental do corpus (v1→v2→v3) pode melhorar ou degradar a qualidade do RAG mesmo quando os indicadores automáticos (como EM/F1) não capturam diretamente o motivo. Por isso, foi necessária uma análise qualitativa: observar manualmente os chunks retornados pelo retrieval vetorial ajuda a entender a *cobertura semântica* e a *adequação do top-k*.
+## Análise interpretativa (Teste 3)
 
-## Limitações de EM/F1
+Validação qualitativa do retrieval, casos observados (LangChain, bancos vetoriais, pgvector, embeddings), discussão, limitações e conclusão experimental estão consolidados em **[final_experimental_analysis.md](final_experimental_analysis.md)** (§5–9). Este ficheiro cobre apenas execução e comparação histórica Testes 1–2.
 
-EM/F1 avaliam o quão bem o LLM respondeu à pergunta usando o contexto recuperado, mas não isolam:
-- se os candidatos recuperados eram realmente relevantes
-- se o top-k continha diversidade suficiente de informação útil
-- se o ganho/perda ocorreu por mudança no corpus e não por variações do gerador.
-
-Assim, EM/F1 deve ser complementado por inspeção direta do retrieval.
-
-## Importância do top-1 relevante
-
-O top-1 (o chunk mais similar) é um indicador prático de cobertura imediata do corpus para a pergunta. Quando o top-1 relevante aparece de forma consistente, a chance do RAG produzir uma resposta melhor aumenta. Quando o top-1 é irrelevante, mesmo um LLM forte tende a sofrer.
-
-## Inspeção manual dos chunks recuperados
-
-Durante a validação qualitativa, o pesquisador deve:
-- verificar a relevância semântica do top-1 e dos próximos chunks
-- observar a evolução de `corpus_version` na saída para evidenciar mudanças incrementais
-- checar diversidade (chunks diferentes por URL/título) e repetição (redução de informação nova).
-
-Esse procedimento fortalece metodologicamente o TCC ao fornecer evidências interpretáveis sobre como o retrieval influencia a qualidade final do RAG ao longo dos testes.
+---
 
 ## Troubleshooting
 

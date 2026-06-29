@@ -2,10 +2,13 @@
 
 Documentação pensada para **escrita do TCC**, **apresentação à banca**, **reprodução do experimento** e **defesa das escolhas arquiteturais**.
 
+> **Índice mestre:** [documentation_index.md](documentation_index.md) | **Relatório preliminar ESALQ:** [preliminary_report_esalq.md](preliminary_report_esalq.md) — ordem de leitura, testes v1/v2/v3, artefatos em `results/`, histórico vs consolidação final.
+
 ## Índice
 
 | Documento | Uso principal |
 |-----------|----------------|
+| [documentation_index.md](documentation_index.md) | **Navegação** — mapa experimental do TCC |
 | [architecture.md](architecture.md) | Capítulo de arquitetura / diagrama de componentes |
 | [methodology.md](methodology.md) | Metodologia experimental e pipeline de dados |
 | [experiments.md](experiments.md) | Protocolo de benchmark e análise de resultados |
@@ -16,6 +19,7 @@ Documentação pensada para **escrita do TCC**, **apresentação à banca**, **r
 | [discussion_preliminary_findings.md](discussion_preliminary_findings.md) | Discussão interpretativa Testes 1 e 2 |
 | [decisions.md](decisions.md) | Registro de decisões (ADR) para defesa |
 | [limitations.md](limitations.md) | Limitações honestas + trabalhos futuros |
+| [final_experimental_analysis.md](final_experimental_analysis.md) | **Análise experimental final** (v3, qualitativa, discussão, conclusão) |
 | [diagrams/](diagrams/) | Diagramas Mermaid (slides e texto) |
 
 Guia rápido na raiz do repositório: [../README.md](../README.md).
@@ -38,12 +42,14 @@ O TCC adota evolução **incremental** do corpus e dos benchmarks, sem apagar ev
 | Teste 1 | `wikipedia_benchmark_v1` (rótulo legado: `wikipedia_benchmark`) | `20260525_160434` | [preliminary_results_test_1.md](preliminary_results_test_1.md) |
 | Expansão incremental | `wikipedia_benchmark_v2` (+35 chunks; índice cumulativo 446) | — | [corpus_evolution.md](corpus_evolution.md) |
 | Teste 2 | `wikipedia_benchmark_v2` | `20260526_020326` | [preliminary_results_test_2.md](preliminary_results_test_2.md) |
-| Teste 3 | `wikipedia_benchmark_v3` (curado + complementar) | _após execução_ | [preliminary_results_test_3.md](preliminary_results_test_3.md) |
-| Discussão consolidada | — | Comparação v1 vs v2 vs v3 | [discussion_preliminary_findings.md](discussion_preliminary_findings.md) |
+| Teste 3 | `wikipedia_benchmark_v3` (curado + complementar) | `20260526_171347` | [final_experimental_analysis.md](final_experimental_analysis.md), [preliminary_results_test_3.md](preliminary_results_test_3.md) |
+| Discussão consolidada | — | Comparação v1 vs v2 vs v3 | [final_experimental_analysis.md](final_experimental_analysis.md), [discussion_preliminary_findings.md](discussion_preliminary_findings.md) |
 
 **Evolução incremental do corpus:** a v2 acrescenta tópicos de recuperação de informação e ferramentas RAG sobre a v1, com deduplicação e indexação incremental (`python indexar_corpus.py --version wikipedia_benchmark_v2`). Relatórios: `results/corpus_report_wikipedia_benchmark_v1.json` e `v2.json`.
 
-**Preservação dos benchmarks históricos:** ficheiros em `results/benchmark_*.json` e `.csv` **não devem ser sobrescritos** nem ter métricas recalculadas retroativamente. Metadados de nomenclatura (ex.: `corpus_version` no Teste 1) podem ser padronizados apenas quando documentados como equivalência, sem alterar EM/F1/latências/respostas.
+**Preservação dos benchmarks históricos:** ficheiros em `results/benchmark_*.json` e `.csv` **não devem ser sobrescritos** nem ter métricas recalculadas retroativamente. No Teste 1 (`20260525_160434`), `corpus = "wikipedia_benchmark"` equivale a `wikipedia_benchmark_v1` — equivalência documentada, sem alterar EM/F1/latências/respostas.
+
+**Benchmark final (Teste 3):** `results/benchmark_20260526_171347.json` — métricas e figuras em [final_experimental_analysis.md](final_experimental_analysis.md) §4; gráficos em `results/plots/`.
 
 **Importância da rastreabilidade:** cada execução exporta `run_id`, `corpus_version`, modelos de embedding/rerank/LLM e agregados por cenário — condição necessária para comparar Teste 1 e Teste 2 na dissertação e para replicar o protocolo (ver [experiments.md](experiments.md), secção comparação v1 vs v2).
 

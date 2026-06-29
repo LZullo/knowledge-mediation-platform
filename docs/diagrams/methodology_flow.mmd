@@ -1,0 +1,9 @@
+flowchart LR
+    A[Coleta do corpus<br/>MediaWiki API PT<br/>+ corpus complementar v3] --> B[Validação e curadoria<br/>títulos, deduplicação<br/>limpeza textual]
+    B --> C[Fragmentação<br/>chunk 500 / overlap 100 ou 150]
+    C --> D[Indexação vetorial<br/>embeddings + pgvector]
+    D --> E[Definição do benchmark<br/>perguntas e gabaritos manuais]
+    E --> F[Execução experimental<br/>recuperação → reranking opcional → geração]
+    F --> G[Coleta de métricas<br/>EM, F1, latência]
+    G --> H[Análise quantitativa<br/>agregação por cenário]
+    G --> I[Análise qualitativa<br/>inspeção manual do top-k]

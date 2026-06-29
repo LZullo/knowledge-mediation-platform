@@ -193,9 +193,18 @@ A hipótese de que *desempenho RAG ∝ cobertura documental* mantém-se válida;
 
 Documentação analítica completa: [preliminary_results_test_2.md](preliminary_results_test_2.md) e [discussion_preliminary_findings.md](discussion_preliminary_findings.md).
 
+## Resultados do Teste 3 (v3 refinado)
+
+**`run_id`:** `20260526_171347` | Índice consultado: 601 chunks (v1+v2+v3) | Rodada v3: 155 chunks | 18 perguntas.
+
+Métricas, figuras (`results/plots/`), validação qualitativa e discussão: **[final_experimental_analysis.md](final_experimental_analysis.md)** §4–9 (fonte canônica).
+
+**Equivalência Teste 1:** `corpus = "wikipedia_benchmark"` ≡ `wikipedia_benchmark_v1` — artefatos preservados sem reprocessamento.
+
 ## Artefatos
 
 - Registro de versões: `app/dados/corpus_registry.py`
 - Documentação viva: `docs/corpus_versions.md` (gerada após indexação)
 - Relatórios: `results/corpus_report_<version>.json`
-- Resultados de benchmark: `results/benchmark_<run_id>.json` (**não sobrescrever** Teste 1 nem Teste 2)
+- Resultados de benchmark: `results/benchmark_<run_id>.json` (**não sobrescrever** Testes 1, 2 nem 3)
+- Análise final: `docs/final_experimental_analysis.md`
