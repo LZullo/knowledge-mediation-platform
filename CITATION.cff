@@ -1,0 +1,23 @@
+cff-version: 1.2.0
+message: "If you use this platform, please cite it as below."
+type: software
+title: "Knowledge Mediation Platform — local RAG for document question answering"
+authors:
+  - family-names: Zullo
+    given-names: Letícia Ferreira dos Santos
+  - family-names: Souza
+    given-names: Lucas José de
+abstract: >-
+  Reusable local platform for document question answering with Retrieval-Augmented
+  Generation: PostgreSQL/pgvector, dense embeddings, optional cross-encoder
+  reranking, and Ollama/OpenAI generation behind a FastAPI interface.
+keywords:
+  - Retrieval-Augmented Generation
+  - document question answering
+  - pgvector
+  - Ollama
+  - research software
+license: MIT
+version: "1.0.0"
+date-released: "2026-07-15"
+repository-code: "https://github.com/REPLACE_WITH_ORG/knowledge-mediation-platform"
