@@ -1,23 +1,37 @@
 cff-version: 1.2.0
-message: "If you use this platform, please cite it as below."
+
+message: "If you use this software in your research, please cite it as follows."
+
 type: software
-title: "Knowledge Mediation Platform — local RAG for document question answering"
+
+title: "Knowledge Mediation Platform"
+
 authors:
   - family-names: Zullo
     given-names: Letícia Ferreira dos Santos
-  - family-names: Souza
-    given-names: Lucas José de
+
 abstract: >-
-  Reusable local platform for document question answering with Retrieval-Augmented
-  Generation: PostgreSQL/pgvector, dense embeddings, optional cross-encoder
-  reranking, and Ollama/OpenAI generation behind a FastAPI interface.
+  Knowledge Mediation Platform is an open-source software platform for building
+  and evaluating intelligent document question-answering systems based on Large
+  Language Models (LLMs). It provides reusable infrastructure for document
+  ingestion, indexing, vector storage, retrieval, context construction,
+  language model orchestration, and automatic evaluation, supporting
+  reproducible research on intelligent knowledge mediation systems.
+
 keywords:
+  - Large Language Models
+  - Intelligent Knowledge Mediation
   - Retrieval-Augmented Generation
-  - document question answering
+  - Document Question Answering
+  - Research Software
+  - FastAPI
+  - PostgreSQL
   - pgvector
-  - Ollama
-  - research software
+
 license: MIT
+
 version: "1.0.0"
+
 date-released: "2026-07-15"
-repository-code: "https://github.com/REPLACE_WITH_ORG/knowledge-mediation-platform"
+
+repository-code: "https://github.com/LZullo/knowledge-mediation-platform"
