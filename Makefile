@@ -1,4 +1,4 @@
-# Makefile na raiz tcc-project/ — venv em tcc-project/venv/
+# Makefile — Knowledge Mediation Platform
 APP_MAKEFILE := $(abspath $(firstword $(MAKEFILE_LIST)))
 APP_DIR := $(dir $(APP_MAKEFILE))
 PROJECT_ROOT := $(abspath $(APP_DIR))
@@ -17,7 +17,7 @@ UVICORN := "$(PYTHON)" -m uvicorn
 
 help:
 	@echo Comandos:
-	@echo   make install   - instala dependencias (app/requirements.txt)
+	@echo   make install   - instala dependencias (requirements.txt na raiz)
 	@echo   make run       - sobe a API com reload (porta 8000)
 	@echo   make run-prod  - sobe a API sem reload (porta 8000)
 

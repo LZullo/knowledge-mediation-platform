@@ -2,7 +2,7 @@
 Gera gráficos simples de evolução v1 → v2 → v3 a partir de artefatos benchmark_*.json.
 
 Uso:
-  python scripts/plot_benchmark_evolution.py \\
+  python scripts/benchmark/plot_benchmark_evolution.py \\
     --runs results/benchmark_20260525_160434.json \\
            results/benchmark_20260526_020326.json \\
            results/benchmark_<teste3_run_id>.json \\

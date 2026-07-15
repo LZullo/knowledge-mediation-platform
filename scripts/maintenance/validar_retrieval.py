@@ -105,7 +105,7 @@ def main() -> None:
             f"Esperado={expected!r}, recebido={tuple(retrieval_versions)!r}."
         )
 
-    repo_root = Path(__file__).resolve().parent
+    repo_root = Path(__file__).resolve().parents[2]
     output_file_path: Path | None = None
     output_file: TextIO | None = None
     if args.save_output:

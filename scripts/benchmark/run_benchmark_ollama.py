@@ -18,11 +18,12 @@ from app.infrastructure.db.connection import SessionLocal
 
 logging.basicConfig(level=logging.INFO)
 
+_PROJECT_ROOT = Path(__file__).resolve().parents[2]
 _DEFAULT_QUESTIONS_V2 = (
-    Path(__file__).resolve().parent / "app" / "dados" / "benchmark_questions_v2_final.json"
+    _PROJECT_ROOT / "app" / "dados" / "benchmark_questions_v2_final.json"
 )
 _DEFAULT_QUESTIONS_V3 = (
-    Path(__file__).resolve().parent / "app" / "dados" / "benchmark_questions_v3.json"
+    _PROJECT_ROOT / "app" / "dados" / "benchmark_questions_v3.json"
 )
 
 if __name__ == "__main__":
