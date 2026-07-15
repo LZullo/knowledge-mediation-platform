@@ -1,411 +1,133 @@
-# TCC — RAG comparativo com corpus técnico da Wikipédia (PT)
+# Knowledge Mediation Platform
 
+Plataforma local e reutilizável para **consulta documental** com *Retrieval-Augmented Generation* (RAG), voltada a pesquisa e prototipagem em sistemas inteligentes baseados em LLM.
 
+> **Nome institucional do repositório:** `knowledge-mediation-platform`
 
-Protótipo experimental de **Retrieval-Augmented Generation (RAG)** em português: indexação de páginas técnicas da Wikipédia, API FastAPI e benchmark com métricas EM/F1 sobre perguntas manuais.
+Este repositório é a **plataforma**. O estudo experimental associado está em [`knowledge-mediation-study`](RELATED_RESEARCH.md).
 
+### Compatibilidade de paths (não alterar)
 
+Os scripts do estudo descobrem a plataforma via variável `RCC_TCC_PROJECT_ROOT` ou, por omissão, a pasta sibling `../tcc-project`.  
+Esse default **não foi alterado** (preserva a reprodutibilidade da campanha do artigo). Ao clonar este repositório com o nome institucional, defina `RCC_TCC_PROJECT_ROOT` para o caminho local — ou mantenha um clone/symlink com o nome de pasta esperado pelo default.
 
-Documentação completa: [docs/README.md](docs/README.md).
+---
 
+## O que esta plataforma oferece
 
+- Arquitetura em camadas com **Strategy Pattern** (retrieval, prompt, geração)
+- Indexação de corpus (Wikipédia PT e corpora customizados)
+- Embeddings densos (`sentence-transformers/all-MiniLM-L6-v2`)
+- Armazenamento vetorial **PostgreSQL + pgvector**
+- Reranking com cross-encoder
+- Geração local via **Ollama** (padrão) ou OpenAI
+- API **FastAPI** (`POST /ask`, OpenAPI em `/docs`)
+- Avaliação automática **Exact Match / F1** e exportação de runs
+
+---
+
+## Relação com a pesquisa
+
+| Repositório | Papel |
+|-------------|--------|
+| **Este** (`knowledge-mediation-platform`) | Software / infraestrutura RAG |
+| **`knowledge-mediation-study`** | Protocolo, benchmark, campanhas, estatística, artigo |
+| **`research-archive`** (privado) | Documentação histórica acadêmica |
+
+Detalhes: [`RELATED_RESEARCH.md`](RELATED_RESEARCH.md).
+
+---
 
 ## Pré-requisitos
 
+| Dependência | Obrigatória? |
+|-------------|--------------|
+| Python 3.11+ | Sim |
+| Docker + Compose | Sim (Postgres/pgvector) |
+| Ollama + modelo `phi3` | Sim no modo padrão |
+| Internet (1ª indexação / download de modelos HF) | Sim na setup |
+| OpenAI API key | Não (só se `LLM_PROVIDER=openai`) |
 
+---
 
-- **Docker** (PostgreSQL + pgvector)
-
-- **Python 3.11+**
-
-- **Make** (opcional; alternativas em bash abaixo)
-
-- **Ollama** com modelo **phi3** (`ollama pull phi3`) — padrão do projeto (`LLM_PROVIDER=ollama`)
-
-- **OpenAI** ([platform.openai.com](https://platform.openai.com/api-keys)) — somente se `LLM_PROVIDER=openai`
-
-- Internet para baixar páginas da Wikipédia (MediaWiki API)
-
-
-
-## Passo a passo — subir e testar
-
-
-
-**Subir o banco**
-
-
+## Início rápido
 
 ```bash
-
+# 1. Banco
 docker compose up -d
 
-```
-
-
-
-**Verificar**
-
-
-
-```bash
-
-docker compose ps
-
-```
-
-
-
-**Limpar/reindexar os dados**
-
-
-
-```bash
-
-python indexar_dados.py
-
-```
-
-
-
-`clear_documents=True` apaga embeddings antigos e reindexa do zero.
-
-
-
-**Subir a API**
-
-
-
-```bash
-
-python -m uvicorn app.main:app --reload --host 127.0.0.1 --port 8000
-
-```
-
-
-
-**Rodar o benchmark**
-
-
-
-```bash
-
-python -c "import logging; from app.infrastructure.db.connection import SessionLocal; from app.evaluation import run_benchmark_experiment; logging.basicConfig(level=logging.INFO); session = SessionLocal(); out = run_benchmark_experiment(session); session.close(); print(out.report.summaries); print(out.json_path, out.csv_path)"
-
-```
-
-
-
-Todos os comandos abaixo assumem o diretório **`tcc-project/`** (raiz deste repositório).
-
-
-
-### 1. Subir o banco (Docker)
-
-
-
-```bash
-
-docker compose up -d
-
-```
-
-
-
-PostgreSQL com pgvector na porta **5433** (usuário/senha/banco: `postgres` / `postgres` / `mba`).
-
-
-
-### 2. Ambiente Python e variáveis
-
-
-
-```bash
-
+# 2. Ambiente
 python -m venv venv
-
-```
-
-
-
-Ativar o venv:
-
-
-
-- **Windows (PowerShell):** `.\venv\Scripts\Activate.ps1`
-
-- **Linux/macOS:** `source venv/bin/activate`
-
-
-
-Instalar dependências:
-
-
-
-```bash
-
-make install
-
-```
-
-
-
-Configurar credenciais:
-
-
-
-```bash
-
-cp .env.example .env
-
-```
-
-
-
-### 3. Criar tabelas
-
-
-
-```bash
-
-python create_tables.py
-
-```
-
-
-
-### 4. Indexar corpus (Wikipédia técnica controlada)
-
-
-
-O script `indexar_dados.py` baixa apenas os tópicos definidos em `WIKI_TOPICS` (`app/dados/wikipedia_loader.py`), aplica chunking e grava embeddings no pgvector.
-
-
-
-```bash
-
-python indexar_dados.py
-
-```
-
-
-
-Personalizar tópicos ou parâmetros de chunk:
-
-
-
-```python
-
-from app.infrastructure.db.connection import SessionLocal
-
-from app.dados.wikipedia_indexer import index_wikipedia_corpus
-
-from app.dados.wikipedia_loader import WIKI_TOPICS
-
-
-
-with SessionLocal() as session:
-
-    report = index_wikipedia_corpus(
-
-        session=session,
-
-        topics=WIKI_TOPICS,
-
-        clear_documents=True,
-
-        chunk_size=500,
-
-        chunk_overlap=100,
-
-    )
-
-    print(report)
-
-```
-
-
-
-Inspecionar páginas baixadas:
-
-
-
-```bash
-
-python inspecionar_wikipedia.py
-
-```
-
-
-
-### 5. Subir a API
-
-
-
-```bash
-
-make run
-
-```
-
-
-
-- Swagger: [http://127.0.0.1:8000/docs](http://127.0.0.1:8000/docs)
-
-
-
-### 6. Testar manualmente
-
-
-
-**Retrieval local** (sem LLM):
-
-
-
-```bash
-
-python test_retrieval.py
-
-python validar_retrieval.py
-
-```
-
-
-
-**Ollama** (geração + RAG; `.env` com `LLM_PROVIDER=ollama`):
-
-
-
-```bash
-
+# Windows: .\venv\Scripts\Activate.ps1
+# Linux/macOS: source venv/bin/activate
+pip install -r requirements.txt
+cp .env.example .env   # ajuste se necessário
+
+# 3. Tabelas + corpus (exemplo)
+python scripts/indexing/create_tables.py
+python scripts/indexing/indexar_corpus.py --version wikipedia_benchmark_v3
+
+# 4. Ollama
 ollama pull phi3
 
-python test_ollama.py
-
-python test_rag_ollama.py
-
-python run_benchmark_ollama.py
-
+# 5. API
+make run
+# ou: python -m uvicorn app.main:app --reload --host 127.0.0.1 --port 8000
 ```
 
+Health: `http://127.0.0.1:8000/health` · Swagger: `http://127.0.0.1:8000/docs`  
+Exemplo de chamada: [`docs/examples/quickstart.md`](docs/examples/quickstart.md).
 
-
-**Pergunta via API** (usa `LLM_PROVIDER` do `.env`):
-
-
+### Benchmark da plataforma
 
 ```bash
-
-curl -X POST http://127.0.0.1:8000/ask ^
-
-  -H "Content-Type: application/json" ^
-
-  -d "{\"question\":\"O que é machine learning?\",\"scenario\":\"rag_rerank\",\"top_k\":3,\"rerank_top_k\":10}"
-
+python scripts/benchmark/run_benchmark_ollama.py --corpus-version wikipedia_benchmark_v3
 ```
 
+Saídas locais em `results/` (não versionadas).
 
+---
 
-Cenários: `llm` | `rag_basic` | `rag_optimized` | `rag_rerank`.
+## Estrutura
 
-
-
-### 7. Benchmark experimental (TCC)
-
-
-
-Benchmark oficial/final do TCC (v2):
-
-- `corpus_version`: `wikipedia_benchmark_v2`
-- perguntas congeladas: `app/dados/benchmark_questions_v2_final.json` (5 perguntas)
-- cenários: `llm`, `rag_basic`, `rag_rerank`
-
-
-
-```bash
-
-python run_benchmark_ollama.py --corpus-version wikipedia_benchmark_v2 --questions-path app/dados/benchmark_questions_v2_final.json
-
+```text
+├── app/                 # Código da plataforma (API, domain, infrastructure…)
+├── scripts/
+│   ├── indexing/        # Corpus e tabelas
+│   ├── benchmark/       # Runs de avaliação
+│   ├── maintenance/     # Validação / migrações
+│   └── development/     # Utilitários de desenvolvimento
+├── docs/
+│   ├── architecture/
+│   ├── methodology/
+│   ├── platform/
+│   ├── examples/
+│   └── legacy/          # Ponteiro para o arquivo histórico
+├── tests/
+├── docker-compose.yml
+├── requirements.txt
+└── RELATED_RESEARCH.md
 ```
 
+---
 
+## Configuração
 
-Saídas em `results/` (`benchmark_*.json` e `benchmark_*.csv`).
+Variáveis: [`.env.example`](.env.example).  
+Postgres de desenvolvimento: `localhost:5433`, db/user/password `mba` / `postgres` / `postgres` (apenas lab).
 
-
-
-## Comandos úteis
-
-
-
-| Ação | Comando |
-
-|------|---------|
-
-| Subir Postgres | `docker compose up -d` |
-
-| Criar tabelas | `python create_tables.py` |
-
-| Indexar Wikipédia | `python indexar_dados.py` |
-
-| Inspecionar corpus | `python inspecionar_wikipedia.py` |
-
-| Testar retrieval | `python test_retrieval.py` / `python validar_retrieval.py` |
-
-| Testar Ollama (LLM) | `python test_ollama.py` |
-
-| Testar RAG + Ollama | `python test_rag_ollama.py` |
-
-| Benchmark (Ollama) | `python run_benchmark_ollama.py` |
-
-| Benchmark (genérico) | ver seção 7 acima |
-
-
-
-## Estrutura (dados)
-
-
-
-```
-
-app/dados/
-
-├── wikipedia_loader.py      # MediaWiki API + WIKI_TOPICS
-
-├── chunking.py              # chunk_size / overlap + metadados
-
-├── wikipedia_indexer.py     # pipeline até pgvector
-
-├── benchmark_loader.py      # leitura do JSON de perguntas
-├── benchmark_questions.json
-└── benchmark_questions_v2_final.json
-
-```
-
-
-
-## Adicionar novos tópicos
-
-
-
-Edite `WIKI_TOPICS` em `app/dados/wikipedia_loader.py` com o **título exato** da página na Wikipédia em português (como na URL, ex.: `Python_(linguagem_de_programação)`). Depois execute `python indexar_dados.py`.
-
-
+---
 
 ## Documentação
 
+- Índice: [`docs/README.md`](docs/README.md)
+- Arquitetura: [`docs/architecture/architecture.md`](docs/architecture/architecture.md)
+- Metodologia / experimentos: [`docs/methodology/`](docs/methodology/)
 
+---
 
-| Documento | Conteúdo |
+## Licença e citação
 
-|-----------|----------|
+Veja [`LICENSE`](LICENSE) e [`CITATION.cff`](CITATION.cff).
 
-| [docs/README.md](docs/README.md) | Guia técnico e reprodução do experimento |
-
-| [docs/methodology.md](docs/methodology.md) | Metodologia, corpus, métricas |
-
-| [docs/experiments.md](docs/experiments.md) | Protocolo de benchmark e análise |
-
-| [docs/architecture.md](docs/architecture.md) | Arquitetura e fluxos |
-
-
+Se usar esta plataforma em pesquisa, cite o software e, quando aplicável, o estudo experimental correspondente.
