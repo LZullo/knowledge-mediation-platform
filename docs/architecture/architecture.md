@@ -1,10 +1,10 @@
 # Arquitetura do sistema
 
-Este documento descreve **como o sistema está organizado**, **por que as camadas existem** e **como o fluxo ponta a ponta funciona**, com foco na defesa do TCC.
+Este documento descreve **como a plataforma está organizada**, **por que as camadas existem** e **como o fluxo ponta a ponta funciona**.
 
 ## Objetivo do sistema
 
-Construir um **assistente de perguntas e respostas** em português que compare:
+Oferecer uma **plataforma de perguntas e respostas documental** em português que compare:
 
 1. Resposta apenas com LLM (**sem contexto recuperado**)
 2. RAG com recuperação vetorial simples
@@ -39,7 +39,7 @@ Diagrama de componentes: [diagrams/architecture.mmd](diagrams/architecture.mmd).
 - **Pydantic** valida entrada (`AskRequest`) e serializa saída (`AskResponse`).
 - Não contém regra de negócio RAG; delega a `execute_rag`.
 
-**Por quê FastAPI:** tipagem, OpenAPI automático (`/docs`), baixo boilerplate — adequado a protótipo experimental com API clara para demonstração na banca.
+**Por quê FastAPI:** tipagem, OpenAPI automático (`/docs`), baixo boilerplate — adequado a uma plataforma experimental com API clara para integração e pesquisa.
 
 ### 2. Casos de uso (`app/application/use_cases/`)
 
@@ -122,7 +122,7 @@ Separação intencional: **embeddings e rerank sempre locais**; geração config
 
 - **`benchmark_runner`:** loop cenários × perguntas do JSON via `execute_rag`.
 - **`metrics`:** EM e F1 com normalização estilo SQuAD (+ artigos em português).
-- **`export`:** JSON completo + CSV para gráficos do TCC.
+- **`export`:** JSON completo + CSV para gráficos e análise.
 
 Independente da API HTTP — essencial para **reprodutibilidade acadêmica**.
 
@@ -136,7 +136,7 @@ Para adicionar um novo cenário experimental:
 
 **Não é necessário** alterar `run_rag_pipeline` nem `PgVectorStore` para rerank ou novos prompts — apenas novas classes Strategy.
 
-## Tecnologias (resumo para o TCC)
+## Tecnologias (resumo)
 
 | Tecnologia | Papel no projeto |
 |------------|------------------|

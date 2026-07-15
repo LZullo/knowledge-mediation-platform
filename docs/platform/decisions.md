@@ -8,7 +8,7 @@ Use este documento na **defesa oral** para demonstrar escolha consciente, não a
 
 ## ADR-01 — PostgreSQL + pgvector como vector store
 
-**Contexto:** necessidade de persistir chunks, embeddings e consultas por similaridade no mesmo ambiente do TCC, com controle total dos dados.
+**Contexto:** necessidade de persistir chunks, embeddings e consultas por similaridade no mesmo ambiente local, com controle total dos dados.
 
 **Decisão:** usar **PostgreSQL** com extensão **pgvector** e SQLAlchemy (`PgVectorStore`).
 
@@ -48,7 +48,7 @@ Use este documento na **defesa oral** para demonstrar escolha consciente, não a
 
 **Limitações:** N pequeno no JSON atual; qualidade da Wikipédia; possível desalinhamento pergunta↔chunk após chunking (ver [limitations.md](limitations.md)).
 
-**Notas de metodologia (versão final do TCC):**
+**Notas de metodologia (versão consolidada da plataforma):**
 
 - v1 foi tratada como **preliminar exploratória**.
 - A tentativa inicial da v2 foi **inválida** (falha antes de exportar JSON/CSV).
@@ -78,7 +78,7 @@ Use este documento na **defesa oral** para demonstrar escolha consciente, não a
 
 **Alternativas:** if/else monolítico; microserviços por cenário.
 
-**Vantagens:** extensão de cenários isolada; código testável; narrativa clara para banca (padrão de projeto).
+**Vantagens:** extensão de cenários isolada; código testável; padrão de projeto explícito.
 
 **Limitações:** protocolo `retrieve(session, question, top_k)` não expõe todos os parâmetros (rerank configurado na instância da strategy).
 
@@ -128,7 +128,7 @@ Use este documento na **defesa oral** para demonstrar escolha consciente, não a
 
 ## ADR-08 — PostgreSQL único (dados + vetores + logs)
 
-**Contexto:** reduzir complexidade operacional do TCC.
+**Contexto:** reduzir complexidade operacional da plataforma.
 
 **Decisão:** tabelas `documents` e `experiment_runs` no mesmo PostgreSQL.
 
@@ -154,7 +154,7 @@ Use este documento na **defesa oral** para demonstrar escolha consciente, não a
 
 ## ADR-10 — Provedor de LLM plugável (Ollama padrão, OpenAI opcional)
 
-**Contexto:** gerar respostas sem bloquear o TCC por API paga; permitir comparar cenários RAG localmente.
+**Contexto:** gerar respostas sem depender de API paga; permitir comparar cenários RAG localmente.
 
 **Decisão:**
 

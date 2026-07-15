@@ -1,6 +1,6 @@
 # Versões do corpus experimental
 
-Documento gerado/atualizado automaticamente pelo pipeline de indexação. Preserva rastreabilidade entre benchmarks (Teste 1 = `wikipedia_benchmark_v1`).
+Documento gerado/atualizado automaticamente pelo pipeline de indexação. Preserva rastreabilidade entre versões de corpus (`wikipedia_benchmark_v1` = rótulo legado `wikipedia_benchmark`).
 
 ## wikipedia_benchmark_v1
 
@@ -27,7 +27,7 @@ Documento gerado/atualizado automaticamente pelo pipeline de indexação. Preser
 
 ### Motivação
 
-Corpus inicial controlado para o benchmark preliminar (Teste 1), com tópicos técnicos amplos da Wikipédia em português.
+Corpus inicial controlado para o benchmark de exemplo da plataforma, com tópicos técnicos amplos da Wikipédia em português.
 
 ### Impacto esperado
 
@@ -35,7 +35,7 @@ Baseline de cobertura documental; evidenciou ganhos de RAG e lacunas (ex.: pgvec
 
 ### Observações de chunking
 
-chunk_size=500, overlap=100 — alinhado à indexação usada antes do Teste 1.
+chunk_size=500, overlap=100 — alinhado à indexação da versão inicial.
 
 ## wikipedia_benchmark_v2
 
@@ -156,37 +156,26 @@ Refinamento experimental: corpus Wikipédia curado com validação prévia de t�
 
 ### Impacto esperado
 
-Aumentar cobertura documental real; permitir Teste 3 com subconjuntos core_5 e extended; manter rastreabilidade v1→v2→v3.
+Aumentar cobertura documental real; permitir subconjuntos `core_5` e `extended`; manter rastreabilidade v1→v2→v3.
 
 ### Observações de chunking
 
 chunk_size=500, overlap=150 (secundário). Principal evolução: curadoria, validação de títulos e corpus complementar documentado.
 
-### Resultados do benchmark final (Teste 3)
-
-| Atributo | Valor |
-|----------|--------|
-| `run_id` | `20260526_171347` |
-| Índice consultado no benchmark | **601** chunks (v1+v2+v3 cumulativos) |
-| Perguntas avaliadas | 18 |
-| F1 médio `rag_basic` | 0,239 |
-| F1 médio `llm` | 0,189 |
-| Validação qualitativa retrieval | `results/retrieval_validation_wikipedia_benchmark_v3.txt` |
-
-Documentação analítica: [final_experimental_analysis.md](final_experimental_analysis.md).
-
 ---
 
 ## Tabela comparativa — versões do corpus
 
-| Versão | Tier | Chunks (rodada isolada) | Chunks no benchmark cumulativo | Tópicos indexados (rodada) | Teste associado |
-|--------|------|-------------------------|--------------------------------|----------------------------|-----------------|
-| `wikipedia_benchmark_v1` | inicial | 411 | 411 (Teste 1) | 9 | Teste 1 — `20260525_160434` |
-| `wikipedia_benchmark_v2` | expandido | +35 | 446 (Teste 2) | +2 | Teste 2 — `20260526_020326` |
-| `wikipedia_benchmark_v3` | refinado | 155 | 601 (Teste 3) | 6 + custom:pgvector | Teste 3 — `20260526_171347` |
+| Versão | Tier | Chunks (rodada isolada) | Chunks cumulativos típicos | Tópicos indexados (rodada) |
+|--------|------|-------------------------|----------------------------|----------------------------|
+| `wikipedia_benchmark_v1` | inicial | 411 | 411 | 9 |
+| `wikipedia_benchmark_v2` | expandido | +35 | 446 | +2 |
+| `wikipedia_benchmark_v3` | refinado | 155 | 601 | 6 + custom:pgvector |
 
-**Nota:** o rótulo legado `wikipedia_benchmark` (Teste 1) equivale a `wikipedia_benchmark_v1`.
+**Nota:** o rótulo legado `wikipedia_benchmark` equivale a `wikipedia_benchmark_v1`.
+
+> Métricas experimentais e runs científicos **não** fazem parte desta documentação da plataforma. Ver `knowledge-mediation-study` (artigo) e `research-archive` (histórico).
 
 ---
 
-_Atualize executando `python indexar_corpus.py --version <id>` ou `python -m app.dados.corpus_documentation` após indexação._
+_Atualize executando `python scripts/indexing/indexar_corpus.py --version <id>` ou `python -m app.dados.corpus_documentation` após indexação._
