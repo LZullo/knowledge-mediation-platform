@@ -1,11 +1,10 @@
 # Ambiente (venv fica na raiz do repositório, ao lado de app/)
-../venv/
 .venv/
 .env
 .env.*
 venv/
-!.env.example
 venv_win/
+!.env.example
 
 # Python
 __pycache__/
@@ -32,18 +31,28 @@ wheels/
 # Testes / cobertura
 .pytest_cache/
 .coverage
+.coverage.*
+coverage.xml
 htmlcov/
 .mypy_cache/
 .ruff_cache/
 
-# IDEs
+# IDEs / OS
 .idea/
 .vscode/
 *.swp
 *.swo
+.DS_Store
+Thumbs.db
 
-# Projeto
+# Dados locais, caches de modelos e saídas regeneráveis
 data/
 models/
 results/
 *.log
+.cache/
+*.bin
+*.onnx
+*.safetensors
+*.gguf
+.ipynb_checkpoints/
