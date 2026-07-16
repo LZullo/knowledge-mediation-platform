@@ -34,7 +34,7 @@ Use este documento na **defesa oral** para demonstrar escolha consciente, não a
 
 - **Indexação:** páginas listadas em `WIKI_TOPICS` (`wikipedia_loader.py`) via MediaWiki API; pipeline `index_wikipedia_corpus` (`wikipedia_indexer.py`).
 - **Benchmark:** perguntas/respostas gold em JSON + `benchmark_loader.py`, com **conjunto congelado** para garantir comparabilidade e reprodutibilidade.
-- Script operacional: `python indexar_dados.py` (chunk 500 / overlap 100 por padrão).
+- Script operacional: `python scripts/indexing/indexar_dados.py` (chunk 500 / overlap 100 por padrão).
 
 **Alternativas:**
 

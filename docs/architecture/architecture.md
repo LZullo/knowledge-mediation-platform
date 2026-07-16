@@ -98,7 +98,7 @@ Sequência detalhada: [diagrams/ask_sequence.mmd](diagrams/ask_sequence.mmd).
 4. **`index_documents`:** `embed_texts` em lote → `PgVectorStore.insert_document` para cada chunk.
 5. Campo **`source`:** `wikipedia|topic=...|title=...|url=...|chunk=N` — única metadata estruturada hoje.
 
-Script operacional na raiz: `python indexar_dados.py` (`index_wikipedia_corpus`, opcional `clear_documents=True`).
+Script operacional: `python scripts/indexing/indexar_dados.py` (`index_wikipedia_corpus`, opcional `clear_documents=True`).
 
 A função genérica `index_documents` também suporta outros pares `(content, source)` (ex. ingestão `.txt` legada).
 

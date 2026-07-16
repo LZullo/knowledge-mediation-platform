@@ -1,7 +1,7 @@
 # Documentação — Knowledge Mediation Platform
 
 Documentação da **plataforma** de consulta documental com RAG (local-first).  
-Histórico acadêmico (TCC, banca, estudos preliminares) está versionado no repositório privado [`research-archive`](../../research-archive/README.md).
+Histórico acadêmico (TCC, banca, estudos preliminares) está versionado no repositório privado `research-archive` (não publicado neste repositório).
 
 ## Índice
 
