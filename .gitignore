@@ -47,8 +47,10 @@ Thumbs.db
 
 # Dados locais, caches de modelos e saídas regeneráveis
 data/
-models/
+/models/
 results/
+# Resíduo de linha artigo — não faz parte do runtime publicado
+app/infrastructure/db/models/article_observation.py
 *.log
 .cache/
 *.bin
